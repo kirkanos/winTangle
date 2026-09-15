@@ -11,29 +11,29 @@ namespace {
 // Grouping the catalogue into submenus -- fifty entries in one list would be
 // unusable.
 struct Group {
-    const wchar_t* label;
+    Str label;
     Action first;
     Action last;  // inclusive
 };
 
 const std::vector<Group>& Groups() {
     static const std::vector<Group> kGroups{
-        {L"Halves", Action::LeftHalf, Action::CenterHalf},
-        {L"Quarters", Action::TopLeft, Action::BottomRight},
-        {L"Thirds", Action::FirstThird, Action::LastTwoThirds},
-        {L"Sixths", Action::TopLeftSixth, Action::BottomRightSixth},
-        {L"Eighths", Action::TopLeftEighth, Action::BottomRightEighth},
-        {L"Ninths", Action::TopLeftNinth, Action::BottomRightNinth},
-        {L"Size", Action::Maximize, Action::Smaller},
-        {L"Position", Action::Center, Action::MoveDown},
-        {L"Displays", Action::NextDisplay, Action::PreviousDisplay},
-        {L"Multiple windows", Action::TileAll, Action::CascadeActiveApp},
+        {Str::GroupHalves, Action::LeftHalf, Action::CenterHalf},
+        {Str::GroupQuarters, Action::TopLeft, Action::BottomRight},
+        {Str::GroupThirds, Action::FirstThird, Action::LastTwoThirds},
+        {Str::GroupSixths, Action::TopLeftSixth, Action::BottomRightSixth},
+        {Str::GroupEighths, Action::TopLeftEighth, Action::BottomRightEighth},
+        {Str::GroupNinths, Action::TopLeftNinth, Action::BottomRightNinth},
+        {Str::GroupSize, Action::Maximize, Action::Smaller},
+        {Str::GroupPosition, Action::Center, Action::MoveDown},
+        {Str::GroupDisplays, Action::NextDisplay, Action::PreviousDisplay},
+        {Str::GroupMultipleWindows, Action::TileAll, Action::CascadeActiveApp},
     };
     return kGroups;
 }
 
 std::wstring MenuLabel(Action a, const Config& config) {
-    std::wstring label = Widen(std::string(ActionLabel(a)));
+    std::wstring label = Widen(LocalizedActionLabel(a));
     if (const auto sc = config.ShortcutFor(a)) {
         label += L"\t" + Widen(FormatShortcut(*sc));
     }
@@ -86,27 +86,27 @@ void TrayIcon::ShowMenu(const Config& config, bool autostartEnabled, bool update
         for (size_t i = indexOf(group.first); i <= indexOf(group.last); ++i) {
             AppendMenuW(sub, MF_STRING, kCmdActionBase + i, MenuLabel(all[i], config).c_str());
         }
-        AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(sub), group.label);
+        AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(sub), T(group.label).c_str());
     }
 
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(menu, MF_STRING | (config.snapAreasEnabled ? MF_CHECKED : 0), kCmdToggleSnapAreas,
-                L"Snap Areas While Dragging");
+                T(Str::MenuSnapAreas).c_str());
     AppendMenuW(menu, MF_STRING | (config.cycleSizes ? MF_CHECKED : 0), kCmdToggleCycleSizes,
-                L"Cycle Sizes");
+                T(Str::MenuCycleSizes).c_str());
     AppendMenuW(menu, MF_STRING | (autostartEnabled ? MF_CHECKED : 0), kCmdToggleAutostart,
-                L"Launch at Login");
+                T(Str::MenuLaunchAtLogin).c_str());
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
     if (updatesSupported) {
-        AppendMenuW(menu, MF_STRING, kCmdCheckUpdates, L"Check for Updates…");
+        AppendMenuW(menu, MF_STRING, kCmdCheckUpdates, T(Str::MenuCheckUpdates).c_str());
         AppendMenuW(menu, MF_STRING | (config.automaticUpdates ? MF_CHECKED : 0),
-                    kCmdToggleAutoUpdates, L"Check for Updates Daily");
+                    kCmdToggleAutoUpdates, T(Str::MenuCheckUpdatesDaily).c_str());
         AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
     }
-    AppendMenuW(menu, MF_STRING, kCmdSettings, L"Settings…");
-    AppendMenuW(menu, MF_STRING, kCmdAbout, L"About WinTangle");
+    AppendMenuW(menu, MF_STRING, kCmdSettings, T(Str::MenuSettings).c_str());
+    AppendMenuW(menu, MF_STRING, kCmdAbout, T(Str::MenuAbout).c_str());
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(menu, MF_STRING, kCmdQuit, L"Quit");
+    AppendMenuW(menu, MF_STRING, kCmdQuit, T(Str::MenuQuit).c_str());
 
     POINT pt{};
     GetCursorPos(&pt);

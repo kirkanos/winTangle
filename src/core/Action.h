@@ -4,6 +4,8 @@
 #include <string_view>
 #include <vector>
 
+#include "Language.h"
+
 namespace wintangle {
 
 // The full catalogue of actions, matching Rectangle one to one. This order is
@@ -42,8 +44,10 @@ enum class Action {
 // Stable identifier used in the config file, the wintangle:// URI and logs.
 std::string_view ActionName(Action a);
 
-// Human readable label for the tray menu and the settings window.
-std::string_view ActionLabel(Action a);
+// Human readable label for the tray menu and the settings window, in the
+// requested language. Prefer LocalizedActionLabel() from Strings.h, which fills
+// in the language currently in use.
+std::string_view ActionLabel(Action a, Language language);
 
 // Inverse of ActionName. Returns false for an unknown name.
 bool ActionFromName(std::string_view name, Action& out);

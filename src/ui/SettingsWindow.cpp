@@ -31,6 +31,7 @@ enum : int {
     kIdCheckAutostart,
     kIdCheckCursor,
     kIdCheckUpdates,
+    kIdLanguage,
     kIdImport,
     kIdExport,
     kIdSave,
@@ -116,7 +117,7 @@ void SettingsWindow::Show() {
     wc.hIcon = LoadIconW(instance_, L"APPICON");
     RegisterClassExW(&wc);
 
-    hwnd_ = CreateWindowExW(0, kClassName, L"WinTangle Settings",
+    hwnd_ = CreateWindowExW(0, kClassName, T(Str::SettingsTitle).c_str(),
                             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT,
                             CW_USEDEFAULT, 720, 620, nullptr, nullptr, instance_, this);
     if (!hwnd_) return;
@@ -205,7 +206,7 @@ LRESULT CALLBACK SettingsWindow::RecorderProc(HWND hwnd, UINT msg, WPARAM wp, LP
             s.vk = vk;
 
             if (s.mods == 0 || KeyName(s.vk).empty()) {
-                SetWindowTextW(hwnd, L"Hold a modifier (Ctrl/Alt/Shift/Win)");
+                SetWindowTextW(hwnd, T(Str::SettingsHoldModifier).c_str());
                 self->recorded_ = Shortcut{};
                 return 0;
             }
@@ -226,8 +227,8 @@ LRESULT CALLBACK SettingsWindow::RecorderProc(HWND hwnd, UINT msg, WPARAM wp, LP
 }
 
 void SettingsWindow::CreateControls(HWND parent) {
-    MakeControl(parent, WC_STATICW, L"Actions and key combinations", 0, 12, 10, 400, 18, -1,
-                instance_);
+    MakeControl(parent, WC_STATICW, T(Str::SettingsActionsHeading).c_str(), 0, 12, 10, 400, 18,
+                -1, instance_);
 
     list_ = CreateWindowExW(WS_EX_CLIENTEDGE, WC_LISTVIEWW, L"",
                             WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
@@ -239,53 +240,79 @@ void SettingsWindow::CreateControls(HWND parent) {
     LVCOLUMNW col{};
     col.mask = LVCF_TEXT | LVCF_WIDTH;
     col.cx = 420;
-    col.pszText = const_cast<wchar_t*>(L"Action");
+    std::wstring columnAction = T(Str::SettingsColumnAction);
+    col.pszText = columnAction.data();
     ListView_InsertColumn(list_, 0, &col);
     col.cx = 240;
-    col.pszText = const_cast<wchar_t*>(L"Key combination");
+    std::wstring columnShortcut = T(Str::SettingsColumnShortcut);
+    col.pszText = columnShortcut.data();
     ListView_InsertColumn(list_, 1, &col);
 
-    MakeControl(parent, WC_STATICW, L"New combination:", 0, 12, 374, 120, 18, -1, instance_);
+    MakeControl(parent, WC_STATICW, T(Str::SettingsNewCombination).c_str(), 0, 12, 374, 120, 18,
+                -1, instance_);
     recorder_ = MakeControl(parent, WC_EDITW, L"", WS_BORDER | ES_READONLY, 136, 371, 220, 24,
                             kIdRecorder, instance_);
     SetWindowSubclass(recorder_, RecorderProc, kIdRecorder, reinterpret_cast<DWORD_PTR>(this));
 
-    MakeControl(parent, WC_BUTTONW, L"Assign", BS_PUSHBUTTON, 366, 371, 100, 24, kIdAssign,
+    MakeControl(parent, WC_BUTTONW, T(Str::SettingsAssign).c_str(), BS_PUSHBUTTON, 366, 371, 100,
+                24, kIdAssign,
                 instance_);
-    MakeControl(parent, WC_BUTTONW, L"Remove", BS_PUSHBUTTON, 474, 371, 100, 24, kIdClear,
+    MakeControl(parent, WC_BUTTONW, T(Str::SettingsRemove).c_str(), BS_PUSHBUTTON, 474, 371, 100,
+                24, kIdClear,
                 instance_);
 
-    MakeControl(parent, WC_STATICW, L"Outer gap (px):", 0, 12, 416, 130, 18, -1, instance_);
+    MakeControl(parent, WC_STATICW, T(Str::SettingsOuterGap).c_str(), 0, 12, 416, 130, 18, -1,
+                instance_);
     outerGap_ = MakeControl(parent, WC_EDITW, L"0", WS_BORDER | ES_NUMBER, 146, 413, 60, 22,
                             kIdOuterGap, instance_);
-    MakeControl(parent, WC_STATICW, L"Inner gap (px):", 0, 226, 416, 130, 18, -1, instance_);
+    MakeControl(parent, WC_STATICW, T(Str::SettingsInnerGap).c_str(), 0, 226, 416, 130, 18, -1,
+                instance_);
     innerGap_ = MakeControl(parent, WC_EDITW, L"0", WS_BORDER | ES_NUMBER, 360, 413, 60, 22,
                             kIdInnerGap, instance_);
 
-    checkCycle_ = MakeControl(parent, WC_BUTTONW, L"Cycle sizes (1/2 → 2/3 → 1/3)",
+    checkCycle_ = MakeControl(parent, WC_BUTTONW, T(Str::SettingsCycleSizes).c_str(),
                               BS_AUTOCHECKBOX, 12, 446, 320, 20, kIdCheckCycle, instance_);
-    checkSnap_ = MakeControl(parent, WC_BUTTONW, L"Snap areas while dragging", BS_AUTOCHECKBOX, 12,
+    checkSnap_ = MakeControl(parent, WC_BUTTONW, T(Str::SettingsSnapAreas).c_str(), BS_AUTOCHECKBOX, 12,
                              470, 320, 20, kIdCheckSnap, instance_);
     checkDisableAero_ =
-        MakeControl(parent, WC_BUTTONW, L"Turn off Windows' own snapping", BS_AUTOCHECKBOX,
+        MakeControl(parent, WC_BUTTONW, T(Str::SettingsDisableWindowsSnap).c_str(), BS_AUTOCHECKBOX,
                     12, 494, 340, 20, kIdCheckDisableAero, instance_);
-    checkAutostart_ = MakeControl(parent, WC_BUTTONW, L"Launch at login", BS_AUTOCHECKBOX, 360,
+    checkAutostart_ = MakeControl(parent, WC_BUTTONW, T(Str::SettingsLaunchAtLogin).c_str(), BS_AUTOCHECKBOX, 360,
                                   446, 320, 20, kIdCheckAutostart, instance_);
-    checkCursor_ = MakeControl(parent, WC_BUTTONW, L"Move cursor with window", BS_AUTOCHECKBOX, 360,
+    checkCursor_ = MakeControl(parent, WC_BUTTONW, T(Str::SettingsMoveCursor).c_str(), BS_AUTOCHECKBOX, 360,
                                470, 320, 20, kIdCheckCursor, instance_);
-    checkUpdates_ = MakeControl(parent, WC_BUTTONW, L"Check for updates daily",
+    checkUpdates_ = MakeControl(parent, WC_BUTTONW, T(Str::SettingsCheckUpdates).c_str(),
                                 BS_AUTOCHECKBOX, 360, 494, 320, 20, kIdCheckUpdates, instance_);
     // Without update checking compiled in the box stays visible but disabled,
     // so it is obvious that this build does not have it.
     EnableWindow(checkUpdates_, Updater::IsSupported());
 
-    MakeControl(parent, WC_BUTTONW, L"Import…", BS_PUSHBUTTON, 12, 534, 120, 26, kIdImport,
+    // Language picker. First entry follows Windows, then one entry per
+    // language, each written in that language itself.
+    MakeControl(parent, WC_STATICW, T(Str::SettingsLanguage).c_str(), 0, 12, 500, 90, 18, -1,
                 instance_);
-    MakeControl(parent, WC_BUTTONW, L"Export…", BS_PUSHBUTTON, 140, 534, 120, 26, kIdExport,
+    languageBox_ = CreateWindowExW(0, WC_COMBOBOXW, L"",
+                                   WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST |
+                                       WS_VSCROLL,
+                                   104, 496, 200, 200, parent,
+                                   reinterpret_cast<HMENU>(static_cast<INT_PTR>(kIdLanguage)),
+                                   instance_, nullptr);
+    SendMessageW(languageBox_, WM_SETFONT,
+                 reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)), TRUE);
+    SendMessageW(languageBox_, CB_ADDSTRING, 0,
+                 reinterpret_cast<LPARAM>(T(Str::SettingsLanguageAuto).c_str()));
+    for (Language language : AllLanguages()) {
+        const std::wstring name = Widen(LanguageDisplayName(language));
+        SendMessageW(languageBox_, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(name.c_str()));
+    }
+
+    MakeControl(parent, WC_BUTTONW, T(Str::SettingsImport).c_str(), BS_PUSHBUTTON, 12, 534, 120, 26, kIdImport,
                 instance_);
-    MakeControl(parent, WC_BUTTONW, L"Save", BS_DEFPUSHBUTTON, 472, 534, 100, 26, kIdSave,
+    MakeControl(parent, WC_BUTTONW, T(Str::SettingsExport).c_str(), BS_PUSHBUTTON, 140, 534, 120, 26, kIdExport,
                 instance_);
-    MakeControl(parent, WC_BUTTONW, L"Cancel", BS_PUSHBUTTON, 580, 534, 100, 26, kIdCancel,
+    MakeControl(parent, WC_BUTTONW, T(Str::SettingsSave).c_str(), BS_DEFPUSHBUTTON, 472, 534, 100, 26, kIdSave,
+                instance_);
+    MakeControl(parent, WC_BUTTONW, T(Str::SettingsCancel).c_str(), BS_PUSHBUTTON, 580, 534, 100, 26, kIdCancel,
                 instance_);
 }
 
@@ -295,7 +322,7 @@ void SettingsWindow::FillList() {
 
     const auto& actions = AllActions();
     for (size_t i = 0; i < actions.size(); ++i) {
-        const std::wstring label = Widen(std::string(ActionLabel(actions[i])));
+        const std::wstring label = Widen(LocalizedActionLabel(actions[i]));
         LVITEMW item{};
         item.mask = LVIF_TEXT | LVIF_PARAM;
         item.iItem = static_cast<int>(i);
@@ -312,7 +339,7 @@ void SettingsWindow::UpdateListRow(int row) {
     if (row < 0 || static_cast<size_t>(row) >= actions.size()) return;
 
     const auto shortcut = config_.ShortcutFor(actions[static_cast<size_t>(row)]);
-    const std::wstring text = shortcut ? Widen(FormatShortcut(*shortcut)) : L"—";
+    const std::wstring text = shortcut ? Widen(FormatShortcut(*shortcut)) : T(Str::SettingsUnbound);
     ListView_SetItemText(list_, row, 1, const_cast<wchar_t*>(text.c_str()));
 }
 
@@ -364,6 +391,16 @@ void SettingsWindow::WriteConfigIntoControls() {
     SetCheck(checkAutostart_, IsAutostartEnabled());
     SetCheck(checkCursor_, config_.moveCursorWithWindow);
     SetCheck(checkUpdates_, config_.automaticUpdates);
+
+    // Index 0 is "same as Windows", the rest follow AllLanguages().
+    int languageIndex = 0;
+    if (config_.language) {
+        const auto& all = AllLanguages();
+        for (size_t i = 0; i < all.size(); ++i) {
+            if (all[i] == *config_.language) languageIndex = static_cast<int>(i) + 1;
+        }
+    }
+    SendMessageW(languageBox_, CB_SETCURSEL, static_cast<WPARAM>(languageIndex), 0);
 }
 
 void SettingsWindow::ReadControlsIntoConfig() {
@@ -374,6 +411,15 @@ void SettingsWindow::ReadControlsIntoConfig() {
     config_.disableWindowsSnap = GetCheck(checkDisableAero_);
     config_.moveCursorWithWindow = GetCheck(checkCursor_);
     config_.automaticUpdates = GetCheck(checkUpdates_);
+
+    const auto selected = SendMessageW(languageBox_, CB_GETCURSEL, 0, 0);
+    if (selected <= 0) {
+        config_.language.reset();
+    } else {
+        const auto& all = AllLanguages();
+        const size_t index = static_cast<size_t>(selected) - 1;
+        if (index < all.size()) config_.language = all[index];
+    }
     config_.launchAtLogin = GetCheck(checkAutostart_);
 }
 
@@ -385,7 +431,8 @@ void SettingsWindow::ImportFromFile() {
     std::string error;
     std::vector<std::string> warnings;
     if (!Config::LoadFromFile(Narrow(path), imported, error, &warnings)) {
-        MessageBoxW(hwnd_, Widen(error).c_str(), L"Import failed", MB_ICONERROR | MB_OK);
+        MessageBoxW(hwnd_, Widen(error).c_str(), T(Str::MsgImportFailed).c_str(),
+                    MB_ICONERROR | MB_OK);
         return;
     }
     config_ = imported;
@@ -393,9 +440,10 @@ void SettingsWindow::ImportFromFile() {
     FillList();
 
     if (!warnings.empty()) {
-        std::string text = "Skipped:\n";
-        for (const auto& w : warnings) text += "• " + w + "\n";
-        MessageBoxW(hwnd_, Widen(text).c_str(), L"Import with warnings", MB_ICONWARNING | MB_OK);
+        std::wstring text = T(Str::MsgSkipped) + L"\n";
+        for (const auto& w : warnings) text += L"• " + Widen(w) + L"\n";
+        MessageBoxW(hwnd_, text.c_str(), T(Str::MsgImportWarnings).c_str(),
+                    MB_ICONWARNING | MB_OK);
     }
 }
 
@@ -406,7 +454,8 @@ void SettingsWindow::ExportToFile() {
     ReadControlsIntoConfig();
     std::string error;
     if (!config_.SaveToFile(Narrow(path), error)) {
-        MessageBoxW(hwnd_, Widen(error).c_str(), L"Export failed", MB_ICONERROR | MB_OK);
+        MessageBoxW(hwnd_, Widen(error).c_str(), T(Str::MsgExportFailed).c_str(),
+                    MB_ICONERROR | MB_OK);
     }
 }
 

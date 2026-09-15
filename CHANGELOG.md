@@ -32,6 +32,8 @@ modelled on Rectangle for macOS.
 - Setup executable (Inno Setup, per-user installation without administrator
   rights) alongside the portable ZIP.
 - Automatic update checking through WinSparkle, once a day, switchable.
+- English and German interface, following the Windows display language by
+  default and pinnable in the settings or through `"language"` in the config.
 - Trace-free removal: the setup asks during uninstall whether settings,
   autostart, URL protocol and update state should go as well, and switches
   Windows' own snapping back on. Portable users get the same through

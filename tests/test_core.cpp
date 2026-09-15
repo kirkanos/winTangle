@@ -227,7 +227,7 @@ TEST(Every_action_has_a_unique_name) {
         Action back{};
         CHECK(ActionFromName(ActionName(a), back));
         CHECK(back == a);
-        CHECK(!ActionLabel(a).empty());
+        CHECK(!ActionLabel(a, Language::English).empty());
     }
     Action unused{};
     CHECK(!ActionFromName("no-such-action", unused));

@@ -17,7 +17,9 @@
 
 #include <string>
 
+#include "core/Language.h"
 #include "core/Rect.h"
+#include "core/Strings.h"
 
 namespace wintangle {
 
@@ -31,5 +33,13 @@ std::string Narrow(std::wstring_view utf16);
 
 // The last Win32 error as readable text, for logs and messages.
 std::wstring LastErrorMessage(DWORD code = GetLastError());
+
+// Localized text as a wide string. Short name on purpose: it appears in every
+// menu entry and every dialog.
+inline std::wstring T(Str id) { return Widen(Text(id)); }
+
+// The language Windows itself is set to, as far as WinTangle speaks it.
+// Falls back to English for everything else.
+Language DetectUiLanguage();
 
 }  // namespace wintangle

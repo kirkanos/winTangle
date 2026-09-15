@@ -6,8 +6,8 @@
 namespace wintangle {
 namespace {
 
-void Note(CleanupReport& report, bool ok, const wchar_t* what) {
-    (ok ? report.removed : report.failed).emplace_back(what);
+void Note(CleanupReport& report, bool ok, Str what) {
+    (ok ? report.removed : report.failed).push_back(what);
 }
 
 // Deletes a registry tree. "It was not there" counts as success -- from the
@@ -54,15 +54,15 @@ bool RestoreWindowsSnap() {
 CleanupReport RemoveAllTraces() {
     CleanupReport report;
 
-    Note(report, RemoveConfigDirectory(), L"Settings (%APPDATA%\\WinTangle)");
+    Note(report, RemoveConfigDirectory(), Str::TraceSettings);
     Note(report,
          DeleteValue(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",
                      L"WinTangle"),
-         L"Autostart entry");
+         Str::TraceAutostart);
     Note(report, DeleteTree(HKEY_CURRENT_USER, L"Software\\Classes\\wintangle"),
-         L"URL protocol wintangle://");
-    Note(report, DeleteTree(HKEY_CURRENT_USER, L"Software\\WinTangle"), L"Update state");
-    Note(report, RestoreWindowsSnap(), L"Windows' own snapping switched back on");
+         Str::TraceUrlProtocol);
+    Note(report, DeleteTree(HKEY_CURRENT_USER, L"Software\\WinTangle"), Str::TraceUpdateState);
+    Note(report, RestoreWindowsSnap(), Str::TraceWindowsSnap);
 
     return report;
 }
@@ -70,12 +70,12 @@ CleanupReport RemoveAllTraces() {
 std::wstring FormatCleanupReport(const CleanupReport& report) {
     std::wstring text;
     if (!report.removed.empty()) {
-        text += L"Removed:\n";
-        for (const auto& item : report.removed) text += L"  • " + item + L"\n";
+        text += T(Str::CleanupRemoved) + L"\n";
+        for (Str item : report.removed) text += L"  • " + T(item) + L"\n";
     }
     if (!report.failed.empty()) {
-        text += L"\nNot removed (is WinTangle still running?):\n";
-        for (const auto& item : report.failed) text += L"  • " + item + L"\n";
+        text += L"\n" + T(Str::CleanupNotRemoved) + L"\n";
+        for (Str item : report.failed) text += L"  • " + T(item) + L"\n";
     }
     return text;
 }

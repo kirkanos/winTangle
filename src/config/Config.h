@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "core/Action.h"
+#include "core/Language.h"
 #include "core/Rect.h"
 #include "core/Shortcut.h"
 
@@ -24,6 +25,10 @@ struct Config {
     bool launchAtLogin = false;
     bool moveCursorWithWindow = false;
     bool automaticUpdates = true;   // daily check via WinSparkle
+
+    // Interface language. Unset means "follow Windows", which is the default
+    // and what the settings window shows as "Same as Windows".
+    std::optional<Language> language;
 
     // Executable names (lower case, without path) WinTangle keeps its hands off.
     std::vector<std::string> ignoredApps;

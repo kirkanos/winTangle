@@ -79,6 +79,11 @@ private:
 };
 
 void App::LoadConfig() {
+    // Before the config is read the language Windows uses is the best guess --
+    // otherwise an error about an unreadable config would arrive in English on
+    // a German system.
+    SetLanguage(DetectUiLanguage());
+
     const std::wstring path = ConfigPath();
     if (path.empty()) return;
 
@@ -87,8 +92,8 @@ void App::LoadConfig() {
     Config loaded;
     if (!Config::LoadFromFile(Narrow(path), loaded, error, &warnings)) {
         MessageBoxW(nullptr,
-                    (L"The configuration could not be read:\n" + Widen(error) +
-                     L"\n\nThe default settings apply.")
+                    (T(Str::MsgConfigUnreadable) + L"\n" + Widen(error) + L"\n\n" +
+                     T(Str::MsgDefaultsApply))
                         .c_str(),
                     L"WinTangle", MB_ICONWARNING | MB_OK);
         return;
@@ -106,6 +111,9 @@ void App::SaveConfig() {
 }
 
 void App::ApplyConfig() {
+    // The language first: everything below may already produce visible text.
+    SetLanguage(config_.language.value_or(DetectUiLanguage()));
+
     if (executor_) executor_->SetConfig(config_);
     updater_.SetAutomaticChecks(config_.automaticUpdates);
     if (dragTracker_) dragTracker_->SetConfig(config_);
@@ -113,11 +121,11 @@ void App::ApplyConfig() {
 
     const auto conflicts = hotkeys_->Apply(config_);
     if (!conflicts.empty() && tray_) {
-        std::wstring text = L"Already taken by another program:\n";
+        std::wstring text = T(Str::MsgHotkeyConflictIntro) + L"\n";
         for (const auto& c : conflicts) {
-            text += L"• " + c.combo + L" (" + Widen(std::string(ActionLabel(c.action))) + L")\n";
+            text += L"• " + c.combo + L" (" + Widen(LocalizedActionLabel(c.action)) + L")\n";
         }
-        tray_->ShowBalloon(L"Key combinations unavailable", text, true);
+        tray_->ShowBalloon(T(Str::MsgHotkeyConflictTitle), text, true);
     }
 
     // Windows' own snapping would otherwise compete with our snap areas: both
@@ -298,11 +306,8 @@ void App::ReportResult(Action action, ExecResult result) {
     if (accessDeniedReported_ || !tray_) return;
 
     accessDeniedReported_ = true;
-    tray_->ShowBalloon(
-        L"Window cannot be moved",
-        L"This window belongs to a process with higher privileges. For WinTangle to "
-        L"arrange it, WinTangle itself has to run as administrator.",
-        true);
+    tray_->ShowBalloon(T(Str::MsgWindowNotMovableTitle), T(Str::MsgWindowNotMovableText),
+                       true);
     (void)action;
 }
 
@@ -314,23 +319,20 @@ void App::HandleUriCommands() {
         if (!name.empty() && ActionFromName(name, action)) {
             RunAction(action);
         } else if (tray_) {
-            tray_->ShowBalloon(L"Unknown call", Widen(uri), true);
+            tray_->ShowBalloon(T(Str::MsgUnknownCallTitle), Widen(uri), true);
         }
     }
 }
 
 void App::ShowAbout() {
     // GPL v3 section 5(d): an interactive program has to show the licence.
-    MessageBoxW(nullptr,
-                L"WinTangle\n\nWindow arrangement by keyboard and by dragging,\n"
-                L"modelled on Rectangle for macOS.\n\n"
-                L"Actions can also be triggered by URL:\n"
-                L"wintangle://execute-action?name=left-half\n\n"
-                L"Version " WINTANGLE_VERSION_W L"\n"
-                L"Copyright (C) 2026 Andreas Hacker\n"
-                L"Free software under the GNU General Public License v3 or later.\n"
-                L"Comes with absolutely no warranty. See the LICENSE file.",
-                L"About WinTangle", MB_ICONINFORMATION | MB_OK);
+    const std::wstring text = L"WinTangle\n\n" + T(Str::AboutDescription) + L"\n\n" +
+                              T(Str::AboutUrlHint) +
+                              L"\nwintangle://execute-action?name=left-half\n\n" +
+                              T(Str::AboutVersion) + L" " WINTANGLE_VERSION_W L"\n" +
+                              T(Str::AboutCopyright) + L"\n" + T(Str::AboutLicense);
+    MessageBoxW(nullptr, text.c_str(), T(Str::AboutTitle).c_str(),
+                MB_ICONINFORMATION | MB_OK);
 }
 
 }  // namespace
@@ -343,30 +345,24 @@ namespace {
 // and available to portable users who have no setup. With "--silent" it runs
 // without asking and without reporting.
 int RunCleanup(bool silent, bool appRunning) {
+    // Runs before any config is loaded, so follow Windows here.
+    SetLanguage(DetectUiLanguage());
+
     if (appRunning && !silent) {
-        MessageBoxW(nullptr,
-                    L"WinTangle is still running. Quit it from the notification "
-                    L"area icon first, then run this again.",
-                    L"Clean up WinTangle", MB_ICONWARNING | MB_OK);
+        MessageBoxW(nullptr, T(Str::CleanupStillRunning).c_str(), T(Str::CleanupTitle).c_str(),
+                    MB_ICONWARNING | MB_OK);
         return 1;
     }
     if (!silent) {
-        const int answer = MessageBoxW(
-            nullptr,
-            L"Remove every trace of WinTangle?\n\n"
-            L"• settings and key bindings\n"
-            L"• autostart entry\n"
-            L"• URL protocol wintangle://\n"
-            L"• stored update state\n\n"
-            L"Windows' own snapping is switched back on if WinTangle turned it "
-            L"off. The program itself is not deleted.",
-            L"Clean up WinTangle", MB_ICONQUESTION | MB_YESNO | MB_DEFBUTTON2);
+        const int answer =
+            MessageBoxW(nullptr, T(Str::CleanupConfirm).c_str(), T(Str::CleanupTitle).c_str(),
+                        MB_ICONQUESTION | MB_YESNO | MB_DEFBUTTON2);
         if (answer != IDYES) return 0;
     }
 
     const CleanupReport report = RemoveAllTraces();
     if (!silent) {
-        MessageBoxW(nullptr, FormatCleanupReport(report).c_str(), L"WinTangle cleaned up",
+        MessageBoxW(nullptr, FormatCleanupReport(report).c_str(), T(Str::CleanupDoneTitle).c_str(),
                     report.failed.empty() ? MB_ICONINFORMATION | MB_OK : MB_ICONWARNING | MB_OK);
     }
     return report.failed.empty() ? 0 : 1;
@@ -400,7 +396,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int) {
         if (!ParseExecuteActionUri(args).empty()) {
             SendUriToRunningInstance(args);
         } else {
-            MessageBoxW(nullptr, L"WinTangle is already running (notification area).", L"WinTangle",
+            MessageBoxW(nullptr, T(Str::MsgAlreadyRunning).c_str(), L"WinTangle",
                         MB_ICONINFORMATION | MB_OK);
         }
         if (mutex) CloseHandle(mutex);
@@ -409,7 +405,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int) {
 
     App app(instance);
     if (!app.Initialize()) {
-        MessageBoxW(nullptr, L"WinTangle could not be started.", L"WinTangle",
+        MessageBoxW(nullptr, T(Str::MsgStartFailed).c_str(), L"WinTangle",
                     MB_ICONERROR | MB_OK);
         if (mutex) CloseHandle(mutex);
         return 1;

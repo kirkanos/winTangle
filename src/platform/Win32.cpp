@@ -21,6 +21,15 @@ std::string Narrow(std::wstring_view utf16) {
     return out;
 }
 
+Language DetectUiLanguage() {
+    // GetUserDefaultUILanguage reports the language Windows is displayed in,
+    // which is what a user expects an application to follow -- unlike the
+    // locale, which only governs number and date formats.
+    const LANGID langid = GetUserDefaultUILanguage();
+    if (PRIMARYLANGID(langid) == LANG_GERMAN) return Language::German;
+    return Language::English;
+}
+
 std::wstring LastErrorMessage(DWORD code) {
     LPWSTR buffer = nullptr;
     const DWORD len = FormatMessageW(

@@ -58,6 +58,7 @@ private:
     HWND checkAutostart_ = nullptr;
     HWND checkCursor_ = nullptr;
     HWND checkUpdates_ = nullptr;
+    HWND languageBox_ = nullptr;
 
     Shortcut recorded_;
 };

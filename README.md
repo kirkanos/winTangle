@@ -11,7 +11,7 @@ Native C++/Win32, no runtime dependency, a single executable.
 
 | Area | State |
 |---|---|
-| Calculation core (all 58 actions, cycling, gaps, layouts, history) | done, 48 unit tests green |
+| Calculation core (all 58 actions, cycling, gaps, layouts, history) | done, 55 unit tests green |
 | Configuration (JSON, shortcut parser, import/export) | done, tested |
 | URL scheme `wintangle://` including its parser | done, parser tested |
 | Win32 layer (windows, displays, hotkeys, tray, drag-snap, settings) | compiles warning free (mingw-w64 cross build), **never yet run on real Windows** |
@@ -107,6 +107,27 @@ importable/exportable from there. Line comments (`//`) are allowed.
 A `shortcuts` block replaces the default bindings entirely; an empty value
 (`""`) explicitly unbinds an action.
 
+## Language
+
+The interface speaks English and German. By default it follows the language
+Windows itself is displayed in (`GetUserDefaultUILanguage`); the settings
+window can pin it, as can the config file:
+
+```json
+{ "language": "auto" }
+```
+
+`"auto"`, `"en"` or `"de"`; regional tags such as `"de-AT"` resolve to their
+base language.
+
+Adding a language means adding one column to the table in
+`src/core/Strings.cpp` and one German-style label column in
+`src/core/Action.cpp`. The test suite then insists that every string and every
+action label is filled in for the new language, so nothing can be forgotten
+quietly. That is the same idea as Rectangle's per-language `.strings` files,
+compiled into the binary so WinTangle stays a single file with no resources to
+deploy alongside it.
+
 ## Actions by URL
 
 ```
@@ -186,7 +207,8 @@ otherwise the executable would carry a different number than the release page.
 
 ```
 src/core/      geometry, action catalogue, layouts, history, JSON, URI,
-               snap zones -- platform free and fully unit tested
+               snap zones, string catalogue -- platform free and fully unit
+               tested
 src/config/    configuration model, loading, saving, migrating
 src/platform/  Win32: window access, displays, execution, WinMain
 src/app/       hotkeys, tray icon, autostart, URL scheme, paths, cleanup

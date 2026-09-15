@@ -64,9 +64,9 @@ void Updater::CheckWithUi() {
     win_sparkle_check_update_with_ui();
 #else
     MessageBoxW(nullptr,
-                L"This build was made without update checking.\n"
-                L"New versions are available at:\n"
-                L"https://github.com/kirkanos/winTangle/releases",
+                (T(Str::MsgUpdatesDisabled) +
+                 L"\nhttps://github.com/kirkanos/winTangle/releases")
+                    .c_str(),
                 L"WinTangle", MB_ICONINFORMATION | MB_OK);
 #endif
 }

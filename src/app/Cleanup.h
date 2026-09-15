@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "core/Strings.h"
+
 namespace wintangle {
 
 // Removes every trace WinTangle leaves on the system.
@@ -25,8 +27,10 @@ namespace wintangle {
 // calls it through "wintangle.exe --cleanup" rather than repeating the
 // deletions in its own script.
 struct CleanupReport {
-    std::vector<std::wstring> removed;  // what was actually removed
-    std::vector<std::wstring> failed;   // what could not be removed
+    // The traces themselves, as string ids -- the report is only turned into
+    // text when it is shown, so it follows the language in use.
+    std::vector<Str> removed;
+    std::vector<Str> failed;
 
     bool AnythingRemoved() const { return !removed.empty(); }
 };

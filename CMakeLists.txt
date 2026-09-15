@@ -17,6 +17,7 @@ add_library(wintangle_core STATIC
     src/core/Json.cpp
     src/core/Layout.cpp
     src/core/Shortcut.cpp
+    src/core/Strings.cpp
     src/core/SnapZones.cpp
     src/core/Uri.cpp
     src/config/Config.cpp
@@ -37,6 +38,7 @@ add_executable(wintangle_tests
     tests/main.cpp
     tests/test_core.cpp
     tests/test_config.cpp
+    tests/test_strings.cpp
     tests/test_uri.cpp
 )
 target_link_libraries(wintangle_tests PRIVATE wintangle_core)
