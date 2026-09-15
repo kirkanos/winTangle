@@ -28,7 +28,7 @@ void EscapeTo(std::string& out, std::string_view s) {
                     std::snprintf(buf, sizeof(buf), "\\u%04x", c);
                     out += buf;
                 } else {
-                    out += c;  // UTF-8 wird unveraendert durchgereicht
+                    out += c;  // UTF-8 is passed through unchanged
                 }
         }
     }
@@ -53,7 +53,7 @@ public:
         }
         SkipWs();
         if (pos_ != text_.size()) {
-            error = "Unerwartete Zeichen nach dem JSON-Wert (" + Position() + ")";
+            error = "Unexpected characters after the JSON value (" + Position() + ")";
             return false;
         }
         return true;
@@ -65,10 +65,10 @@ private:
         for (size_t i = 0; i < pos_ && i < text_.size(); ++i) {
             if (text_[i] == '\n') { ++line; col = 1; } else { ++col; }
         }
-        return "Zeile " + std::to_string(line) + ", Spalte " + std::to_string(col);
+        return "line " + std::to_string(line) + ", column " + std::to_string(col);
     }
     std::string Error() const {
-        return (message_.empty() ? std::string("Ungueltiges JSON") : message_) +
+        return (message_.empty() ? std::string("Invalid JSON") : message_) +
                " (" + Position() + ")";
     }
     bool Fail(std::string msg) {
@@ -82,8 +82,8 @@ private:
             if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
                 ++pos_;
             } else if (c == '/' && pos_ + 1 < text_.size() && text_[pos_ + 1] == '/') {
-                // Zeilenkommentare sind kein JSON, aber in einer von Hand
-                // gepflegten Konfigdatei zu nuetzlich, um sie zu verbieten.
+                // Line comments are not JSON, but far too useful in a hand
+                // maintained config file to forbid.
                 while (pos_ < text_.size() && text_[pos_] != '\n') ++pos_;
             } else {
                 return;
@@ -97,14 +97,14 @@ private:
     }
 
     bool Literal(std::string_view lit, Value v, Value& out) {
-        if (text_.compare(pos_, lit.size(), lit) != 0) return Fail("Unbekanntes Literal");
+        if (text_.compare(pos_, lit.size(), lit) != 0) return Fail("Unknown literal");
         pos_ += lit.size();
         out = std::move(v);
         return true;
     }
 
     bool ParseValue(Value& out) {
-        if (pos_ >= text_.size()) return Fail("Vorzeitiges Ende");
+        if (pos_ >= text_.size()) return Fail("Unexpected end of input");
         switch (text_[pos_]) {
             case '{': return ParseObject(out);
             case '[': return ParseArray(out);
@@ -129,9 +129,9 @@ private:
         while (true) {
             SkipWs();
             std::string key;
-            if (!ParseString(key)) return Fail("Objektschluessel erwartet");
+            if (!ParseString(key)) return Fail("Expected an object key");
             SkipWs();
-            if (!Consume(':')) return Fail("':' erwartet");
+            if (!Consume(':')) return Fail("Expected ':'");
             SkipWs();
             Value v;
             if (!ParseValue(v)) return false;
@@ -139,7 +139,7 @@ private:
             SkipWs();
             if (Consume(',')) continue;
             if (Consume('}')) break;
-            return Fail("',' oder '}' erwartet");
+            return Fail("Expected ',' or '}'");
         }
         out = Value(std::move(obj));
         return true;
@@ -158,14 +158,14 @@ private:
             SkipWs();
             if (Consume(',')) continue;
             if (Consume(']')) break;
-            return Fail("',' oder ']' erwartet");
+            return Fail("Expected ',' or ']'");
         }
         out = Value(std::move(arr));
         return true;
     }
 
     bool ParseString(std::string& out) {
-        if (!Consume('"')) return Fail("'\"' erwartet");
+        if (!Consume('"')) return Fail("Expected '\"'");
         out.clear();
         while (pos_ < text_.size()) {
             const char c = text_[pos_++];
@@ -183,17 +183,17 @@ private:
                 case 'r': out += '\r'; break;
                 case 't': out += '\t'; break;
                 case 'u': {
-                    if (pos_ + 4 > text_.size()) return Fail("Unvollstaendige \\u-Sequenz");
+                    if (pos_ + 4 > text_.size()) return Fail("Incomplete \\u escape");
                     const unsigned cp = static_cast<unsigned>(
                         std::strtoul(std::string(text_.substr(pos_, 4)).c_str(), nullptr, 16));
                     pos_ += 4;
                     AppendUtf8(out, cp);
                     break;
                 }
-                default: return Fail("Unbekannte Escape-Sequenz");
+                default: return Fail("Unknown escape sequence");
             }
         }
-        return Fail("Zeichenkette nicht beendet");
+        return Fail("Unterminated string");
     }
 
     static void AppendUtf8(std::string& out, unsigned cp) {
@@ -219,7 +219,7 @@ private:
             else if (c == '.' || c == 'e' || c == 'E' || c == '+' || c == '-') { ++pos_; }
             else break;
         }
-        if (!digits) return Fail("Zahl erwartet");
+        if (!digits) return Fail("Expected a number");
         out = Value(std::strtod(std::string(text_.substr(start, pos_ - start)).c_str(), nullptr));
         return true;
     }

@@ -6,53 +6,53 @@
 
 namespace wintangle {
 
-// Vollständiger Aktionskatalog, 1:1 zu Rectangle. Die Reihenfolge ist auch die
-// Reihenfolge im Einstellungsdialog und im Tray-Menü.
+// The full catalogue of actions, matching Rectangle one to one. This order is
+// also the order used in the settings window and the tray menu.
 enum class Action {
-    // Hälften
+    // Halves
     LeftHalf, RightHalf, TopHalf, BottomHalf, CenterHalf,
-    // Viertel
+    // Quarters
     TopLeft, TopRight, BottomLeft, BottomRight,
-    // Drittel
+    // Thirds
     FirstThird, CenterThird, LastThird, FirstTwoThirds, LastTwoThirds,
-    // Sechstel
+    // Sixths
     TopLeftSixth, TopCenterSixth, TopRightSixth,
     BottomLeftSixth, BottomCenterSixth, BottomRightSixth,
-    // Achtel
+    // Eighths
     TopLeftEighth, TopCenterLeftEighth, TopCenterRightEighth, TopRightEighth,
     BottomLeftEighth, BottomCenterLeftEighth, BottomCenterRightEighth, BottomRightEighth,
-    // Neuntel
+    // Ninths
     TopLeftNinth, TopCenterNinth, TopRightNinth,
     MiddleLeftNinth, MiddleCenterNinth, MiddleRightNinth,
     BottomLeftNinth, BottomCenterNinth, BottomRightNinth,
-    // Größe
+    // Size
     Maximize, AlmostMaximize, MaximizeHeight, MaximizeWidth,
     Larger, Smaller,
     // Position
     Center, CenterProminently, Restore, ReverseAll,
     MoveLeft, MoveRight, MoveUp, MoveDown,
-    // Monitore
+    // Displays
     NextDisplay, PreviousDisplay,
-    // Mehrere Fenster
+    // Multiple windows
     TileAll, RowsAll, ColumnsAll, CascadeAll, CascadeActiveApp,
 
     Count_
 };
 
-// Stabiler Bezeichner für Konfigdatei, wintangle://-URI und Logs.
+// Stable identifier used in the config file, the wintangle:// URI and logs.
 std::string_view ActionName(Action a);
 
-// Menschenlesbare Beschriftung für Tray-Menü und Einstellungen.
+// Human readable label for the tray menu and the settings window.
 std::string_view ActionLabel(Action a);
 
-// Kehrt ActionName um. Gibt false zurück, wenn der Name unbekannt ist.
+// Inverse of ActionName. Returns false for an unknown name.
 bool ActionFromName(std::string_view name, Action& out);
 
-// Alle Aktionen in Katalogreihenfolge.
+// Every action in catalogue order.
 const std::vector<Action>& AllActions();
 
-// Aktionen, die mehrere Fenster gleichzeitig anfassen und deshalb nicht über
-// Calculate(), sondern über den Multi-Window-Pfad laufen.
+// Actions that touch several windows at once and therefore do not go through
+// Calculate() but through the multi-window path.
 bool IsMultiWindowAction(Action a);
 
 }  // namespace wintangle

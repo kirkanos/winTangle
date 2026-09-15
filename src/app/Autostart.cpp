@@ -40,7 +40,7 @@ bool SetAutostartEnabled(bool enabled) {
                                 static_cast<DWORD>((value.size() + 1) * sizeof(wchar_t)));
     } else {
         status = RegDeleteValueW(key, kValueName);
-        if (status == ERROR_FILE_NOT_FOUND) status = ERROR_SUCCESS;  // war schon aus
+        if (status == ERROR_FILE_NOT_FOUND) status = ERROR_SUCCESS;  // already off
     }
     RegCloseKey(key);
     return status == ERROR_SUCCESS;

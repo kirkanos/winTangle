@@ -29,8 +29,8 @@ Config Config::Defaults() {
     Config c;
     c.gaps = Gaps{0, 0};
 
-    // Kern: Haelften auf den Pfeiltasten -- Ctrl+Alt statt Win, weil Windows
-    // Win+Pfeil fuer AeroSnap reserviert und RegisterHotKey das nicht bekommt.
+    // The core: halves on the arrow keys -- Ctrl+Alt rather than Win, because
+    // Windows reserves Win+arrow for AeroSnap and RegisterHotKey never sees it.
     Bind(c, Action::LeftHalf, "Ctrl+Alt+Left");
     Bind(c, Action::RightHalf, "Ctrl+Alt+Right");
     Bind(c, Action::TopHalf, "Ctrl+Alt+Up");
@@ -68,9 +68,9 @@ Config Config::Defaults() {
     Bind(c, Action::TileAll, "Ctrl+Alt+Shift+T");
     Bind(c, Action::CascadeAll, "Ctrl+Alt+Shift+S");
 
-    // Sechstel, Achtel, Neuntel, Zeilen/Spalten bleiben bewusst unbelegt --
-    // sie sind ueber Tray-Menue und URI erreichbar und wuerden sonst die
-    // Tastatur ueberfrachten.
+    // Sixths, eighths, ninths and rows/columns are deliberately left unbound:
+    // they are reachable from the tray menu and the URI, and would otherwise
+    // clutter the keyboard.
     return c;
 }
 
@@ -94,7 +94,7 @@ std::string Config::ToJson() const {
     gapsObj.Set("inner", gaps.inner);
 
     Value shortcutsObj;
-    // In Katalogreihenfolge schreiben, damit die Datei stabil bleibt.
+    // Write in catalogue order so the file stays stable.
     for (Action a : AllActions()) {
         const auto it = shortcuts.find(a);
         if (it == shortcuts.end()) continue;
@@ -124,7 +124,7 @@ bool Config::FromJson(std::string_view text, Config& out, std::string& error,
     json::Value root;
     if (!json::Parse(text, root, error)) return false;
     if (!root.IsObject()) {
-        error = "Die Konfiguration muss ein JSON-Objekt sein";
+        error = "The configuration must be a JSON object";
         return false;
     }
 
@@ -154,22 +154,22 @@ bool Config::FromJson(std::string_view text, Config& out, std::string& error,
         }
     }
 
-    // Ein vorhandener shortcuts-Block ersetzt die Vorgaben vollstaendig,
-    // sonst liessen sich Standardbelegungen nie loswerden.
+    // A shortcuts block replaces the defaults completely; otherwise there
+    // would be no way to get rid of a default binding.
     if (root["shortcuts"].IsObject()) {
         c.shortcuts.clear();
         for (const auto& [key, value] : root["shortcuts"].AsObject()) {
             Action a{};
             if (!ActionFromName(key, a)) {
-                if (warnings) warnings->push_back("Unbekannte Aktion: " + key);
+                if (warnings) warnings->push_back("Unknown action: " + key);
                 continue;
             }
-            // Leerer String heisst ausdruecklich "nicht belegt".
+            // An empty string explicitly means "not bound".
             if (value.AsString().empty()) continue;
             Shortcut s;
             if (!ParseShortcut(value.AsString(), s)) {
                 if (warnings)
-                    warnings->push_back("Unlesbare Tastenkombination fuer " + key + ": " +
+                    warnings->push_back("Unreadable key combination for " + key + ": " +
                                         value.AsString());
                 continue;
             }
@@ -182,24 +182,24 @@ bool Config::FromJson(std::string_view text, Config& out, std::string& error,
 }
 
 bool Config::SaveToFile(const std::string& path, std::string& error) const {
-    // Erst in eine temporaere Datei schreiben, dann umbenennen: ein Absturz
-    // mitten im Speichern darf die Konfiguration nicht zerstoeren.
+    // Write to a temporary file first, then rename: a crash in the middle of
+    // saving must not destroy the configuration.
     const std::string tmp = path + ".tmp";
     {
         std::ofstream f(tmp, std::ios::binary | std::ios::trunc);
         if (!f) {
-            error = "Konnte " + tmp + " nicht schreiben";
+            error = "Could not write " + tmp;
             return false;
         }
         f << ToJson();
         if (!f) {
-            error = "Fehler beim Schreiben von " + tmp;
+            error = "Error while writing " + tmp;
             return false;
         }
     }
     std::remove(path.c_str());
     if (std::rename(tmp.c_str(), path.c_str()) != 0) {
-        error = "Konnte " + tmp + " nicht nach " + path + " umbenennen";
+        error = "Could not rename " + tmp + " to " + path;
         return false;
     }
     return true;
@@ -209,7 +209,7 @@ bool Config::LoadFromFile(const std::string& path, Config& out, std::string& err
                           std::vector<std::string>* warnings) {
     std::ifstream f(path, std::ios::binary);
     if (!f) {
-        // Keine Datei ist kein Fehler: dann gelten die Vorgaben.
+        // A missing file is not an error: the defaults apply then.
         out = Defaults();
         return true;
     }

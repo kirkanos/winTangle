@@ -1,5 +1,5 @@
-// Plattformfreie Geometrie. Bewusst ohne <windows.h>, damit der komplette
-// Berechnungskern auch auf macOS/Linux gebaut und getestet werden kann.
+// Plain geometry. Deliberately free of <windows.h> so the entire calculation
+// core can be built and tested on macOS and Linux as well.
 #pragma once
 
 #include <algorithm>
@@ -7,7 +7,7 @@
 
 namespace wintangle {
 
-// Left/Top/Right/Bottom wie Win32 RECT: right/bottom sind exklusiv.
+// Left/top/right/bottom like the Win32 RECT: right and bottom are exclusive.
 struct Rect {
     int left = 0;
     int top = 0;
@@ -33,7 +33,7 @@ struct Rect {
         return Rect{left + dx, top + dy, right + dx, bottom + dy};
     }
 
-    // Verschiebt (ohne zu skalieren) so weit nötig, damit das Rect in `bounds` liegt.
+    // Moves (without scaling) just far enough to fit inside `bounds`.
     Rect ClampedInto(const Rect& bounds) const {
         Rect r = *this;
         if (r.Width() > bounds.Width()) {
@@ -60,8 +60,8 @@ struct Rect {
     }
 };
 
-// Bruchteil-Beschreibung einer Zielposition innerhalb der Arbeitsfläche.
-// Beispiel linke Hälfte: {0.0, 0.0, 0.5, 1.0}
+// Fractional description of a target position inside the work area.
+// Left half, for example: {0.0, 0.0, 0.5, 1.0}
 struct Fraction {
     double x = 0.0;
     double y = 0.0;
@@ -74,9 +74,9 @@ struct Fraction {
     }
 };
 
-// Wandelt einen Bruchteil in absolute Pixel innerhalb von `area`.
-// Rundet die Kanten (nicht Breite/Höhe), damit zwei benachbarte Hälften
-// pixelgenau aneinanderstoßen und keine 1px-Lücke entsteht.
+// Turns a fraction into absolute pixels inside `area`. Rounds the edges rather
+// than the width and height, so two adjacent halves meet exactly and leave no
+// one-pixel seam between them.
 inline Rect ApplyFraction(const Rect& area, const Fraction& f) {
     const double w = static_cast<double>(area.Width());
     const double h = static_cast<double>(area.Height());
@@ -87,18 +87,17 @@ inline Rect ApplyFraction(const Rect& area, const Fraction& f) {
     return Rect{l, t, r, b};
 }
 
-// Außenabstand zum Bildschirmrand und Innenabstand zwischen Fenstern.
-// Der Innenabstand wird hälftig je Kante angewandt, damit zwei benachbarte
-// Fenster zusammen genau `inner` Pixel Abstand haben.
+// Outer margin to the screen edge and inner gap between windows. The inner gap
+// is applied by halves per edge, so two neighbouring windows end up exactly
+// `inner` pixels apart.
 struct Gaps {
     int outer = 0;
     int inner = 0;
     bool IsZero() const { return outer == 0 && inner == 0; }
 };
 
-// Wendet die Abstände auf ein bereits berechnetes Ziel-Rect an. Kanten, die am
-// Rand der Arbeitsfläche liegen, bekommen den Außen-, alle anderen den halben
-// Innenabstand.
+// Applies the gaps to an already calculated target rect. Edges that sit on the
+// boundary of the work area get the outer gap, all others half the inner one.
 inline Rect ApplyGaps(const Rect& target, const Rect& area, const Gaps& gaps) {
     if (gaps.IsZero()) return target;
     const int half = gaps.inner / 2;

@@ -27,7 +27,7 @@ std::wstring LastErrorMessage(DWORD code) {
         FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         nullptr, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         reinterpret_cast<LPWSTR>(&buffer), 0, nullptr);
-    std::wstring out = len && buffer ? std::wstring(buffer, len) : L"Fehler " + std::to_wstring(code);
+    std::wstring out = len && buffer ? std::wstring(buffer, len) : L"Error " + std::to_wstring(code);
     if (buffer) LocalFree(buffer);
     while (!out.empty() && (out.back() == L'\n' || out.back() == L'\r')) out.pop_back();
     return out;

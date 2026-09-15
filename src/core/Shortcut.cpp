@@ -13,7 +13,7 @@ struct KeyEntry {
     std::string_view name;
 };
 
-// Virtual-Key-Codes als Zahlen, damit der Kern ohne <windows.h> auskommt.
+// Virtual key codes as plain numbers, so the core needs no <windows.h>.
 const std::vector<KeyEntry>& KeyTable() {
     static const std::vector<KeyEntry> kKeys = [] {
         std::vector<KeyEntry> keys{
@@ -28,7 +28,7 @@ const std::vector<KeyEntry>& KeyTable() {
             {0xDB, "BracketLeft"}, {0xDC, "Backslash"}, {0xDD, "BracketRight"},
             {0xDE, "Quote"},
         };
-        // Buchstaben und Ziffern liegen auf ihren ASCII-Werten.
+        // Letters and digits sit on their ASCII values.
         static std::array<char, 26> letters{};
         for (unsigned i = 0; i < 26; ++i) {
             letters[i] = static_cast<char>('A' + i);
@@ -80,7 +80,7 @@ unsigned VkFromToken(const std::string& upper) {
     for (const auto& k : KeyTable()) {
         if (Upper(k.name) == upper) return k.vk;
     }
-    // Ein paar bequeme Synonyme.
+    // A few convenient synonyms.
     if (upper == "RETURN") return 0x0D;
     if (upper == "ESC") return 0x1B;
     if (upper == "PGUP") return 0x21;
@@ -118,12 +118,12 @@ bool ParseShortcut(std::string_view text, Shortcut& out) {
         }
         const unsigned vk = VkFromToken(upper);
         if (vk == 0) return false;
-        if (haveKey) return false;  // zwei Nicht-Modifier-Tasten
+        if (haveKey) return false;  // two non-modifier keys
         result.vk = vk;
         haveKey = true;
     }
 
-    // Ohne Modifier wuerde der Hotkey die Taste systemweit schlucken.
+    // Without a modifier the hotkey would swallow that key system wide.
     if (!haveKey || result.mods == 0) return false;
     out = result;
     return true;

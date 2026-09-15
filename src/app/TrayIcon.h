@@ -7,9 +7,9 @@
 
 namespace wintangle {
 
-// Symbol im Infobereich samt Kontextmenue. Das Menue enthaelt den gesamten
-// Aktionskatalog -- auch die Aktionen ohne Tastenkombination sind darueber
-// erreichbar, genau wie in Rectangle.
+// Notification area icon plus context menu. The menu carries the entire action
+// catalogue -- actions without a key combination are reachable through it too,
+// exactly as in Rectangle.
 class TrayIcon {
 public:
     TrayIcon(HWND owner, HICON icon);
@@ -18,12 +18,12 @@ public:
     TrayIcon(const TrayIcon&) = delete;
     TrayIcon& operator=(const TrayIcon&) = delete;
 
-    // Nach einem Neustart des Explorers muss das Symbol neu angemeldet werden.
+    // After Explorer restarts the icon has to be registered again.
     void Recreate();
 
     void ShowBalloon(const std::wstring& title, const std::wstring& text, bool warning = false);
 
-    // Zeigt das Kontextmenue an der aktuellen Mausposition.
+    // Shows the context menu at the current cursor position.
     void ShowMenu(const Config& config, bool autostartEnabled, bool updatesSupported);
 
 private:

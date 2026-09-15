@@ -50,7 +50,7 @@ std::string ParseExecuteActionUri(std::string_view uri) {
     if (!StartsWithIgnoreCase(uri, kScheme)) return {};
     uri.remove_prefix(kScheme.size());
 
-    // Windows haengt an Protokoll-Aufrufe gerne einen Schraegstrich an.
+    // Windows likes to append a trailing slash to protocol invocations.
     while (!uri.empty() && uri.back() == '/') uri.remove_suffix(1);
 
     const size_t query = uri.find('?');

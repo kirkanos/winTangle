@@ -8,26 +8,26 @@
 namespace wintangle {
 namespace {
 
-// Gruppierung des Katalogs in Untermenues -- 50 Eintraege am Stueck waeren
-// unbenutzbar.
+// Grouping the catalogue into submenus -- fifty entries in one list would be
+// unusable.
 struct Group {
     const wchar_t* label;
     Action first;
-    Action last;  // einschliesslich
+    Action last;  // inclusive
 };
 
 const std::vector<Group>& Groups() {
     static const std::vector<Group> kGroups{
-        {L"Hälften", Action::LeftHalf, Action::CenterHalf},
-        {L"Viertel", Action::TopLeft, Action::BottomRight},
-        {L"Drittel", Action::FirstThird, Action::LastTwoThirds},
-        {L"Sechstel", Action::TopLeftSixth, Action::BottomRightSixth},
-        {L"Achtel", Action::TopLeftEighth, Action::BottomRightEighth},
-        {L"Neuntel", Action::TopLeftNinth, Action::BottomRightNinth},
-        {L"Größe", Action::Maximize, Action::Smaller},
+        {L"Halves", Action::LeftHalf, Action::CenterHalf},
+        {L"Quarters", Action::TopLeft, Action::BottomRight},
+        {L"Thirds", Action::FirstThird, Action::LastTwoThirds},
+        {L"Sixths", Action::TopLeftSixth, Action::BottomRightSixth},
+        {L"Eighths", Action::TopLeftEighth, Action::BottomRightEighth},
+        {L"Ninths", Action::TopLeftNinth, Action::BottomRightNinth},
+        {L"Size", Action::Maximize, Action::Smaller},
         {L"Position", Action::Center, Action::MoveDown},
-        {L"Bildschirme", Action::NextDisplay, Action::PreviousDisplay},
-        {L"Mehrere Fenster", Action::TileAll, Action::CascadeActiveApp},
+        {L"Displays", Action::NextDisplay, Action::PreviousDisplay},
+        {L"Multiple windows", Action::TileAll, Action::CascadeActiveApp},
     };
     return kGroups;
 }
@@ -91,26 +91,26 @@ void TrayIcon::ShowMenu(const Config& config, bool autostartEnabled, bool update
 
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(menu, MF_STRING | (config.snapAreasEnabled ? MF_CHECKED : 0), kCmdToggleSnapAreas,
-                L"Snap-Bereiche beim Ziehen");
+                L"Snap Areas While Dragging");
     AppendMenuW(menu, MF_STRING | (config.cycleSizes ? MF_CHECKED : 0), kCmdToggleCycleSizes,
-                L"Größen zyklieren");
+                L"Cycle Sizes");
     AppendMenuW(menu, MF_STRING | (autostartEnabled ? MF_CHECKED : 0), kCmdToggleAutostart,
-                L"Mit Windows starten");
+                L"Launch at Login");
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
     if (updatesSupported) {
-        AppendMenuW(menu, MF_STRING, kCmdCheckUpdates, L"Nach Updates suchen…");
+        AppendMenuW(menu, MF_STRING, kCmdCheckUpdates, L"Check for Updates…");
         AppendMenuW(menu, MF_STRING | (config.automaticUpdates ? MF_CHECKED : 0),
-                    kCmdToggleAutoUpdates, L"Täglich nach Updates suchen");
+                    kCmdToggleAutoUpdates, L"Check for Updates Daily");
         AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
     }
-    AppendMenuW(menu, MF_STRING, kCmdSettings, L"Einstellungen…");
-    AppendMenuW(menu, MF_STRING, kCmdAbout, L"Über WinTangle");
+    AppendMenuW(menu, MF_STRING, kCmdSettings, L"Settings…");
+    AppendMenuW(menu, MF_STRING, kCmdAbout, L"About WinTangle");
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(menu, MF_STRING, kCmdQuit, L"Beenden");
+    AppendMenuW(menu, MF_STRING, kCmdQuit, L"Quit");
 
     POINT pt{};
     GetCursorPos(&pt);
-    // Ohne SetForegroundWindow bleibt das Menue offen, wenn daneben geklickt wird.
+    // Without SetForegroundWindow the menu stays open when clicking elsewhere.
     SetForegroundWindow(owner_);
     TrackPopupMenu(menu, TPM_RIGHTBUTTON | TPM_BOTTOMALIGN, pt.x, pt.y, 0, owner_, nullptr);
     PostMessageW(owner_, WM_NULL, 0, 0);

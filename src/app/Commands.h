@@ -4,10 +4,10 @@
 
 namespace wintangle {
 
-// Menue- und Nachrichten-Ids an einer Stelle, damit sich Tray-Menue,
-// Einstellungsdialog und Fensterprozedur nicht ins Gehege kommen.
+// Menu and message ids in one place, so the tray menu, the settings window and
+// the window procedure do not step on each other.
 enum : unsigned {
-    // Aktionen im Tray-Menue: kCmdActionBase + Index in AllActions().
+    // Actions in the tray menu: kCmdActionBase + index into AllActions().
     kCmdActionBase = 1000,
 
     kCmdSettings = 100,
@@ -20,12 +20,12 @@ enum : unsigned {
     kCmdToggleAutoUpdates = 107,
 };
 
-// Eigene Fensternachrichten.
+// Custom window messages.
 enum : unsigned {
-    kMsgTrayCallback = WM_APP + 1,   // Klick auf das Tray-Symbol
-    kMsgUriCommand = WM_APP + 2,     // wintangle://-Aufruf aus einer zweiten Instanz
-    kMsgTaskbarCreated = WM_APP + 3, // Explorer neu gestartet (wird umgemappt)
-    kMsgConfigChanged = WM_APP + 4,  // Einstellungen wurden gespeichert
+    kMsgTrayCallback = WM_APP + 1,   // click on the tray icon
+    kMsgUriCommand = WM_APP + 2,     // wintangle:// call from a second instance
+    kMsgTaskbarCreated = WM_APP + 3, // Explorer restarted (remapped)
+    kMsgConfigChanged = WM_APP + 4,  // the settings were saved
 };
 
 }  // namespace wintangle

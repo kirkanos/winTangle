@@ -11,28 +11,28 @@ namespace wintangle {
 
 enum class ExecResult {
     Ok,
-    NoTarget,        // kein brauchbares Fenster im Vordergrund
-    Ignored,         // App steht auf der Ignorierliste
-    NothingToDo,     // z.B. Restore ohne Historie, Monitorwechsel bei einem Monitor
-    AccessDenied,    // Fenster eines erhoehten Prozesses (UIPI)
+    NoTarget,        // no usable window in the foreground
+    Ignored,         // the app is on the ignore list
+    NothingToDo,     // restore without history, display switch with one display
+    AccessDenied,    // window of an elevated process (UIPI)
     Failed,
 };
 
-// Fuehrt Aktionen aus. Der einzige Ort, an dem Berechnung, Fensterzugriff und
-// Historie zusammenkommen -- Hotkey, Tray-Menue, wintangle://-URI und
-// Drag-Snap rufen alle hier hinein.
+// Runs actions. The single place where calculation, window access and history
+// come together -- hotkey, tray menu, wintangle:// URI and drag-snap all call
+// in here.
 class Executor {
 public:
     explicit Executor(const Config& config) : config_(&config) {}
 
-    // Nach dem Speichern der Einstellungen aufrufen.
+    // Call after the settings have been saved.
     void SetConfig(const Config& config) { config_ = &config; }
 
-    // `target` = nullptr bedeutet: aktives Fenster.
+    // `target` = nullptr means: the active window.
     ExecResult Execute(Action action, HWND target = nullptr);
 
-    // Setzt ein Fenster direkt auf einen Rahmen (Drag-Snap: das Ziel steht
-    // schon fest) und pflegt dabei die Historie.
+    // Places a window on a given frame directly (drag-snap already knows the
+    // target) and keeps the history up to date.
     ExecResult ApplyFrame(HWND hwnd, Action action, const Rect& frame);
 
     void ForgetWindow(HWND hwnd) { history_.Forget(reinterpret_cast<std::uint64_t>(hwnd)); }

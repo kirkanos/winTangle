@@ -1,5 +1,5 @@
-// Minimales Test-Harness. Bewusst ohne externe Abhängigkeit, damit die
-// Geometrie-Tests überall bauen -- auch auf dem Mac, auf dem entwickelt wird.
+// Minimal test harness. Deliberately free of external dependencies so the
+// geometry tests build everywhere, including on the Mac this is developed on.
 #pragma once
 
 #include <cstdio>
@@ -47,7 +47,7 @@ inline int RunAll() {
         t.fn();
         std::printf("%s %s\n", Failures() == before ? "ok  " : "FAIL", t.name.c_str());
     }
-    std::printf("\n%zu Tests, %d Fehler\n", Registry().size(), Failures());
+    std::printf("\n%zu tests, %d failures\n", Registry().size(), Failures());
     return Failures() == 0 ? 0 : 1;
 }
 

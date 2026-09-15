@@ -5,9 +5,8 @@
 
 namespace wintangle {
 
-// Modifier-Bits sind absichtlich identisch zu den MOD_*-Werten von
-// RegisterHotKey, damit zwischen Konfiguration und Win32 nichts umgerechnet
-// werden muss.
+// The modifier bits are deliberately identical to RegisterHotKey's MOD_*
+// values, so nothing has to be translated between config and Win32.
 enum Modifier : unsigned {
     kModAlt = 0x0001,
     kModCtrl = 0x0002,
@@ -15,7 +14,7 @@ enum Modifier : unsigned {
     kModWin = 0x0008,
 };
 
-// Eine Tastenkombination: Modifier plus ein Virtual-Key-Code.
+// A key combination: modifiers plus one virtual key code.
 struct Shortcut {
     unsigned mods = 0;
     unsigned vk = 0;
@@ -25,17 +24,17 @@ struct Shortcut {
     bool operator!=(const Shortcut& o) const { return !(*this == o); }
 };
 
-// "Ctrl+Alt+Left" -> Shortcut. Gross-/Kleinschreibung egal, "Control", "Strg",
-// "Win"/"Super"/"Meta" und "Option" werden als Synonyme akzeptiert.
-// Gibt false zurueck, wenn die Taste unbekannt ist oder kein Modifier dabei
-// ist -- ein globaler Hotkey ohne Modifier wuerde die Tastatur blockieren.
+// "Ctrl+Alt+Left" -> Shortcut. Case insensitive; "Control", "Strg",
+// "Win"/"Super"/"Meta" and "Option" are accepted as synonyms. Returns false
+// when the key is unknown or no modifier is present -- a global hotkey without
+// a modifier would swallow that key system wide.
 bool ParseShortcut(std::string_view text, Shortcut& out);
 
-// Kanonische Schreibweise, so wie sie in die Konfigdatei geschrieben und im
-// Einstellungsdialog angezeigt wird: "Ctrl+Alt+Shift+Win+Taste".
+// Canonical spelling, as written to the config file and shown in the settings
+// window: "Ctrl+Alt+Shift+Win+Key".
 std::string FormatShortcut(const Shortcut& s);
 
-// Anzeigename eines Virtual-Key-Codes ("Left", "F3", "A"), leer bei unbekannt.
+// Display name of a virtual key code ("Left", "F3", "A"), empty if unknown.
 std::string_view KeyName(unsigned vk);
 
 }  // namespace wintangle

@@ -6,10 +6,10 @@
 
 using namespace wintangle;
 
-TEST(Uri_liefert_den_Aktionsnamen) {
+TEST(Uri_yields_the_action_name) {
     CHECK_EQ(ParseExecuteActionUri("wintangle://execute-action?name=left-half"),
              std::string("left-half"));
-    // Windows haengt gern einen Schraegstrich an und schreibt das Schema gross.
+    // Windows likes to append a slash and to upper-case the scheme.
     CHECK_EQ(ParseExecuteActionUri("WinTangle://Execute-Action?name=Left-Half"),
              std::string("left-half"));
     CHECK_EQ(ParseExecuteActionUri("wintangle://execute-action?foo=1&name=maximize"),
@@ -18,20 +18,20 @@ TEST(Uri_liefert_den_Aktionsnamen) {
              std::string("top-left"));
 }
 
-TEST(Uri_weist_alles_andere_ab) {
+TEST(Uri_rejects_everything_else) {
     CHECK(ParseExecuteActionUri("").empty());
     CHECK(ParseExecuteActionUri("https://example.com").empty());
     CHECK(ParseExecuteActionUri("wintangle://etwas-anderes?name=maximize").empty());
     CHECK(ParseExecuteActionUri("wintangle://execute-action").empty());
     CHECK(ParseExecuteActionUri("wintangle://execute-action?andere=maximize").empty());
-    // "execute-action-xyz" darf nicht als Treffer durchgehen.
+    // "execute-action-xyz" must not pass as a match.
     CHECK(ParseExecuteActionUri("wintangle://execute-actions?name=maximize").empty());
 }
 
-TEST(Url_Dekodierung) {
+TEST(Url_decoding) {
     CHECK_EQ(UrlDecode("a%20b+c"), std::string("a b c"));
-    CHECK_EQ(UrlDecode("100%"), std::string("100%"));   // unvollstaendig, bleibt stehen
-    CHECK_EQ(UrlDecode("%zz"), std::string("%zz"));     // kein Hex, bleibt stehen
+    CHECK_EQ(UrlDecode("100%"), std::string("100%"));   // incomplete, left as is
+    CHECK_EQ(UrlDecode("%zz"), std::string("%zz"));     // not hex, left as is
 }
 
 namespace {
@@ -42,39 +42,39 @@ Action Zone(int x, int y) {
 }
 }  // namespace
 
-TEST(Snap_Zonen_an_den_Raendern) {
+TEST(Snap_zones_along_the_edges) {
     CHECK(Zone(2, 540) == Action::LeftHalf);
     CHECK(Zone(1918, 540) == Action::RightHalf);
     CHECK(Zone(960, 1) == Action::Maximize);
 }
 
-TEST(Snap_Ecken_ergeben_Viertel) {
+TEST(Snap_corners_yield_quarters) {
     CHECK(Zone(1, 1) == Action::TopLeft);
     CHECK(Zone(1918, 2) == Action::TopRight);
     CHECK(Zone(1, 1078) == Action::BottomLeft);
     CHECK(Zone(1918, 1078) == Action::BottomRight);
 }
 
-TEST(Unterer_Rand_ist_in_Drittel_geteilt) {
+TEST(The_bottom_edge_is_split_into_thirds) {
     CHECK(Zone(300, 1079) == Action::FirstThird);
     CHECK(Zone(960, 1079) == Action::CenterThird);
     CHECK(Zone(1600, 1079) == Action::LastThird);
 }
 
-TEST(Mitten_im_Bild_passiert_nichts) {
+TEST(Nothing_happens_in_the_middle_of_the_screen) {
     CHECK(!SnapZoneAt(960, 540, kScreen).has_value());
     CHECK(!SnapZoneAt(100, 300, kScreen).has_value());
-    // Leerer Monitor darf nicht abstuerzen.
+    // An empty display must not crash.
     CHECK(!SnapZoneAt(0, 0, Rect{}).has_value());
 }
 
-TEST(Zonen_folgen_dem_Monitor_Offset) {
+TEST(Zones_follow_the_display_offset) {
     const Rect second{1920, 0, 3840, 1080};
     const auto a = SnapZoneAt(1921, 540, second);
     CHECK(a.has_value() && *a == Action::LeftHalf);
     const auto b = SnapZoneAt(3838, 540, second);
     CHECK(b.has_value() && *b == Action::RightHalf);
-    // Die Mitte des zweiten Monitors ist keine Zone -- der Rand des ersten
-    // Monitors darf nicht mitgerechnet werden.
+    // The middle of the second display is not a zone -- the first display's
+    // edge must not be counted here.
     CHECK(!SnapZoneAt(2880, 540, second).has_value());
 }

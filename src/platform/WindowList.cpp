@@ -10,7 +10,7 @@ struct EnumContext {
 
 BOOL CALLBACK EnumProc(HWND hwnd, LPARAM param) {
     auto* ctx = reinterpret_cast<EnumContext*>(param);
-    if (ctx->out->size() >= ctx->filter->maxCount) return FALSE;  // genug gesammelt
+    if (ctx->out->size() >= ctx->filter->maxCount) return FALSE;  // collected enough
 
     WindowRef w(hwnd);
     if (w.IsMinimized() && !ctx->filter->includeMinimized) return TRUE;
@@ -36,7 +36,7 @@ DWORD ProcessIdOf(HWND hwnd) {
 
 std::vector<WindowRef> ListWindows(const WindowFilter& filter) {
     std::vector<WindowRef> out;
-    // EnumWindows liefert bereits Z-Order von vorne nach hinten.
+    // EnumWindows already yields z-order from front to back.
     EnumContext ctx{&filter, &out};
     EnumWindows(EnumProc, reinterpret_cast<LPARAM>(&ctx));
     return out;

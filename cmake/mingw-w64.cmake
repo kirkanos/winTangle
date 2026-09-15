@@ -1,5 +1,5 @@
-# Cross-Build fuer Windows x64 mit mingw-w64. Dient der Verifikation waehrend
-# der Entwicklung auf macOS -- ausgeliefert wird der MSVC-Build (siehe CI).
+# Cross build for Windows x64 with mingw-w64. Used for verification while
+# developing on macOS -- what ships is the MSVC build (see CI).
 set(CMAKE_SYSTEM_NAME Windows)
 set(CMAKE_SYSTEM_PROCESSOR x86_64)
 

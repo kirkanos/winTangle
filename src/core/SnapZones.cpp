@@ -15,7 +15,7 @@ std::optional<Action> SnapZoneAt(int x, int y, const Rect& bounds, const SnapZon
 
     const int cornerHeight = static_cast<int>(bounds.Height() * cfg.cornerFraction);
 
-    // Seitenraender zuerst: sie haben die Ecken, der obere Rand hat sie nicht.
+    // Side edges first: they own the corners, the top edge does not.
     if (nearLeft) {
         if (y < bounds.top + cornerHeight) return Action::TopLeft;
         if (y > bounds.bottom - cornerHeight) return Action::BottomLeft;
@@ -28,7 +28,7 @@ std::optional<Action> SnapZoneAt(int x, int y, const Rect& bounds, const SnapZon
     }
     if (nearTop) return Action::Maximize;
 
-    // Unterer Rand: waagerecht in Drittel geteilt.
+    // Bottom edge: split into thirds horizontally.
     const int third = bounds.Width() / 3;
     if (x < bounds.left + third) return Action::FirstThird;
     if (x < bounds.left + 2 * third) return Action::CenterThird;

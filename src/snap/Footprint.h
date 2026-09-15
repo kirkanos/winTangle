@@ -4,11 +4,11 @@
 
 namespace wintangle {
 
-// Halbtransparente Vorschau der Zielposition waehrend des Ziehens.
+// Semi transparent preview of the target position while dragging.
 //
-// Wichtig sind die Fensterstile: WS_EX_TRANSPARENT laesst Mausereignisse
-// hindurch (sonst bricht das Ziehen ab), WS_EX_NOACTIVATE verhindert, dass die
-// Vorschau den Fokus stiehlt, WS_EX_TOOLWINDOW haelt sie aus Alt+Tab heraus.
+// The window styles are what matters: WS_EX_TRANSPARENT lets mouse events pass
+// through (otherwise the drag aborts), WS_EX_NOACTIVATE keeps the preview from
+// stealing focus, WS_EX_TOOLWINDOW keeps it out of Alt+Tab.
 class Footprint {
 public:
     ~Footprint();

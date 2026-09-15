@@ -14,7 +14,7 @@ std::wstring AppDataDir() {
         }
         if (path.empty()) return std::wstring();
         path += L"\\WinTangle";
-        CreateDirectoryW(path.c_str(), nullptr);  // existiert bereits ist in Ordnung
+        CreateDirectoryW(path.c_str(), nullptr);  // already existing is fine
         return path;
     }();
     return dir;
@@ -34,7 +34,7 @@ std::wstring ExecutablePath() {
             path.resize(len);
             return path;
         }
-        path.resize(path.size() * 2);  // Pfad laenger als MAX_PATH
+        path.resize(path.size() * 2);  // path longer than MAX_PATH
     }
 }
 

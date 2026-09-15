@@ -1,30 +1,30 @@
 name: release
 
-# Ausgeloest durch einen Tag wie v0.1.0. Baut die Exe, packt sie und legt eine
-# GitHub-Release-Seite mit Aenderungen und Pruefsumme an.
+# Triggered by a tag such as v0.1.0. Builds the executable, packages it and
+# creates a GitHub release page with the changes and checksums.
 on:
   push:
     tags: ["v*"]
 
 permissions:
-  contents: write  # noetig, um die Release-Seite anzulegen
+  contents: write  # needed to create the release page
 
 jobs:
   release:
     runs-on: windows-latest
     defaults:
       run:
-        shell: bash  # auf dem Windows-Runner ist Git Bash vorhanden
+        shell: bash  # Git Bash is available on the Windows runner
 
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # gesamte Historie fuer die Aenderungsliste
+          fetch-depth: 0  # full history for the change list
 
-      # Die Versionsnummer steckt in der Exe (VERSIONINFO aus der CMakeLists).
-      # Laeuft sie gegen den Tag auseinander, wird hier abgebrochen, statt eine
-      # falsch beschriftete Exe zu veroeffentlichen.
-      - name: Version gegen Tag pruefen
+      # The version number is baked into the executable (VERSIONINFO from the
+      # CMakeLists). If it disagrees with the tag, stop here rather than publish
+      # a mislabelled binary.
+      - name: Check version against tag
         id: version
         run: |
           tag="${GITHUB_REF_NAME}"
@@ -32,23 +32,23 @@ jobs:
           cmake_version=$(grep -oE 'project\(WinTangle VERSION [0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt \
                           | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
           if [ "$version" != "$cmake_version" ]; then
-            echo "::error::Tag $tag passt nicht zur Version $cmake_version in CMakeLists.txt"
+            echo "::error::Tag $tag does not match version $cmake_version in CMakeLists.txt"
             exit 1
           fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: Bauen
+      - name: Build
         run: |
           cmake -S . -B build -A x64
           cmake --build build --config Release -j
 
-      - name: Tests
+      - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
 
-      # Inno Setup liegt nicht in jedem Runner-Image, deshalb sicherheitshalber
-      # nachinstallieren. Ist es da, kostet der Schritt Sekunden.
-      - name: Inno Setup bereitstellen
+      # Inno Setup is not part of every runner image, so install it just in
+      # case. When it is already there the step costs seconds.
+      - name: Provide Inno Setup
         shell: pwsh
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
@@ -57,20 +57,20 @@ jobs:
           }
           "ISCC=$iscc" >> $env:GITHUB_ENV
 
-      - name: Portables Archiv packen
+      - name: Package portable archive
         id: package
         run: |
           version="${{ steps.version.outputs.version }}"
           name="wintangle-${version}-x64"
           mkdir -p "dist/${name}"
           cp build/src/platform/Release/wintangle.exe "dist/${name}/"
-          # WinSparkle liegt nach dem Build neben der Exe.
+          # After the build WinSparkle sits next to the executable.
           cp build/src/platform/Release/WinSparkle.dll "dist/${name}/"
           cp LICENSE README.md CHANGELOG.md "dist/${name}/"
           (cd dist && 7z a -tzip "${name}.zip" "${name}" > /dev/null)
           echo "name=${name}" >> "$GITHUB_OUTPUT"
 
-      - name: Installer bauen
+      - name: Build installer
         id: installer
         run: |
           version="${{ steps.version.outputs.version }}"
@@ -78,7 +78,7 @@ jobs:
           ls -l dist/
           echo "name=wintangle-${version}-setup.exe" >> "$GITHUB_OUTPUT"
 
-      - name: Pruefsummen
+      - name: Checksums
         id: checksums
         run: |
           cd dist
@@ -88,8 +88,8 @@ jobs:
           cat SHA256SUMS.txt >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
-      # Der Feed, den die installierte Fassung taeglich abfragt.
-      - name: Appcast erzeugen
+      # The feed an installed copy polls once a day.
+      - name: Generate appcast
         run: |
           python packaging/make_appcast.py \
             --version "${{ steps.version.outputs.version }}" \
@@ -99,10 +99,10 @@ jobs:
             --output dist/appcast.xml
           cat dist/appcast.xml
 
-      # Die Release-Notizen bestehen aus dem Abschnitt der CHANGELOG.md zu
-      # dieser Version plus der Commit-Liste seit dem vorigen Tag. Fehlt der
-      # Abschnitt, bleibt immer noch die Commit-Liste uebrig.
-      - name: Release-Notizen zusammenstellen
+      # The release notes consist of this version's section from CHANGELOG.md
+      # plus the commit list since the previous tag. If the section is missing,
+      # the commit list still stands on its own.
+      - name: Assemble release notes
         run: |
           version="${{ steps.version.outputs.version }}"
           tag="${{ steps.version.outputs.tag }}"
@@ -120,7 +120,7 @@ jobs:
                 found { print }
               ' CHANGELOG.md
             else
-              echo "_Kein CHANGELOG-Eintrag für ${version}._"
+              echo "_No CHANGELOG entry for ${version}._"
               echo
             fi
 
@@ -135,17 +135,17 @@ jobs:
             echo
             echo "## Installation"
             echo
-            echo "- **\`${{ steps.installer.outputs.name }}\`** – Setup, richtet Autostart,"
-            echo "  Deinstallation und die automatische Update-Prüfung ein."
-            echo "- **\`${{ steps.package.outputs.name }}.zip\`** – portabel, einfach entpacken."
+            echo "- **\`${{ steps.installer.outputs.name }}\`** – installer; sets up"
+            echo "  autostart, uninstall and automatic update checking."
+            echo "- **\`${{ steps.package.outputs.name }}.zip\`** – portable, just unzip."
             echo
-            echo "Windows 10/11 x64. Nichts davon ist signiert – SmartScreen meldet sich"
-            echo "beim ersten Start; die Prüfsummen unten decken das ab."
+            echo "Windows 10/11 x64. Nothing here is signed – SmartScreen will speak up"
+            echo "on first launch; the checksums below cover that."
             echo
-            echo "Eine bereits installierte Fassung meldet sich von selbst: WinTangle"
-            echo "prüft einmal täglich gegen diese Release-Seite."
+            echo "An already installed copy will notice on its own: WinTangle checks"
+            echo "this release page once a day."
             echo
-            echo "## Prüfsummen"
+            echo "## Checksums"
             echo
             echo '```'
             echo "${{ steps.checksums.outputs.block }}"
@@ -153,19 +153,19 @@ jobs:
 
             if [ -n "$previous" ]; then
               echo
-              echo "**Vollständiger Vergleich:** https://github.com/${GITHUB_REPOSITORY}/compare/${previous}...${tag}"
+              echo "**Full comparison:** https://github.com/${GITHUB_REPOSITORY}/compare/${previous}...${tag}"
             fi
           } > release-notes.md
 
           cat release-notes.md
 
-      - name: Release anlegen
+      - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag="${{ steps.version.outputs.tag }}"
           name="${{ steps.package.outputs.name }}"
-          # Tags mit Suffix (v0.2.0-rc1) werden als Vorabversion markiert.
+          # Tags with a suffix (v0.2.0-rc1) are marked as a pre-release.
           prerelease=""
           case "$tag" in *-*) prerelease="--prerelease";; esac
 

@@ -1,31 +1,44 @@
 # WinTangle
 
-Fensteranordnung für Windows nach dem Vorbild von
-[Rectangle](https://github.com/rxhanson/Rectangle) für macOS: Fenster per
-globaler Tastenkombination oder per Ziehen an den Bildschirmrand auf Hälften,
-Drittel, Viertel, Sechstel, Achtel und Neuntel setzen.
+Window arrangement for Windows, modelled on
+[Rectangle](https://github.com/rxhanson/Rectangle) for macOS: snap windows to
+halves, thirds, quarters, sixths, eighths and ninths with a global hotkey or by
+dragging them to a screen edge.
 
-Natives C++/Win32, keine Runtime-Abhängigkeit, eine einzelne Exe.
+Native C++/Win32, no runtime dependency, a single executable.
 
-## Stand
+## Status
 
-| Bereich | Stand |
+| Area | State |
 |---|---|
-| Berechnungskern (alle 58 Aktionen, Zyklus, Abstände, Layouts, Historie) | fertig, 48 Unit-Tests grün |
-| Konfiguration (JSON, Shortcut-Parser, Import/Export) | fertig, getestet |
-| URL-Schema `wintangle://` inkl. Parser | fertig, Parser getestet |
-| Win32-Schicht (Fenster, Monitore, Hotkeys, Tray, Drag-Snap, Einstellungen) | kompiliert warnungsfrei (mingw-w64 Cross-Build), **auf echtem Windows noch nicht ausgeführt** |
+| Calculation core (all 58 actions, cycling, gaps, layouts, history) | done, 48 unit tests green |
+| Configuration (JSON, shortcut parser, import/export) | done, tested |
+| URL scheme `wintangle://` including its parser | done, parser tested |
+| Win32 layer (windows, displays, hotkeys, tray, drag-snap, settings) | compiles warning free (mingw-w64 cross build), **never yet run on real Windows** |
 
-Entwickelt wird auf macOS. Der Kern läuft und wird dort getestet, die
-Win32-Schicht wird lokal per mingw-w64 gegengebaut — das fängt Compile- und
-Linkfehler, sagt aber nichts über das Laufzeitverhalten. Verbindlich ist der
-MSVC-Build in der CI. Offen ist damit
-genau ein Schritt: die Exe auf einem Windows-Rechner starten und die
-Testmatrix unten durchgehen.
+Development happens on macOS. The core runs and is tested there, the Win32
+layer is cross-built locally with mingw-w64 — that catches compile and link
+errors but says nothing about runtime behaviour. The MSVC build in CI is what
+counts. Exactly one step is therefore still open: start the executable on a
+Windows machine and work through the test matrix below.
 
-## Bauen
+## Installation
 
-Windows (Visual Studio 2022, C++-Desktop-Workload):
+Two routes, both on the
+[releases page](https://github.com/kirkanos/winTangle/releases):
+
+- **Setup executable** — installs per user (no administrator rights, no UAC
+  prompt), sets up autostart, uninstall and the `wintangle://` protocol, and
+  tells you when a new version is out.
+- **ZIP** — unzip and run. No entry in the app list, autostart from the tray
+  menu.
+
+Neither is signed, so SmartScreen will speak up on first launch ("More info" →
+"Run anyway"). Every release page carries the checksums.
+
+## Building
+
+Windows (Visual Studio 2022, C++ desktop workload):
 
 ```
 cmake -S . -B build -A x64
@@ -33,138 +46,53 @@ cmake --build build --config Release
 build\src\platform\Release\wintangle.exe
 ```
 
-macOS/Linux (nur Kern und Tests):
+macOS/Linux (core and tests only):
 
 ```
 cmake -S . -B build && cmake --build build && ctest --test-dir build
 ```
 
-Cross-Build der kompletten App auf macOS (`brew install mingw-w64`), zum
-Prüfen der Win32-Schicht ohne Windows-Rechner:
+Cross-building the whole app on macOS (`brew install mingw-w64`), to check the
+Win32 layer without a Windows machine:
 
 ```
 cmake -S . -B build-win -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-w64.cmake
 cmake --build build-win -j
 ```
 
-Die Update-Prüfung ist dabei automatisch aus (`WINTANGLE_ENABLE_UPDATES=OFF`):
-WinSparkle liefert nur MSVC-Binärdateien. Das Programm läuft trotzdem
-vollständig, nur die Update-Einträge sind abgeblendet.
+Update checking is off automatically in that configuration
+(`WINTANGLE_ENABLE_UPDATES=OFF`): WinSparkle ships MSVC binaries only. The
+program still works completely, the update controls are simply disabled. The
+resulting executable depends on `libstdc++`/`libgcc` and is meant purely for
+verification; what ships is the statically linked MSVC build.
 
-Die dabei entstehende Exe hängt an `libstdc++`/`libgcc` und ist nur zur
-Verifikation gedacht; ausgeliefert wird der statisch gelinkte MSVC-Build.
+## Default bindings
 
-## Installation
+`Win+arrow` belongs to Windows' own snapping and cannot be overridden through
+`RegisterHotKey` — which is why everything sits on `Ctrl+Alt`, just as
+Rectangle uses `⌃⌥`.
 
-Zwei Wege, beide auf der [Release-Seite](https://github.com/kirkanos/winTangle/releases):
-
-- **Setup-Exe** — installiert pro Benutzer (keine Administratorrechte, keine
-  UAC-Abfrage), richtet Autostart, Deinstallation und das `wintangle://`-Protokoll
-  ein und meldet sich selbst, wenn eine neue Version da ist.
-- **ZIP** — entpacken und starten. Kein Eintrag in der Softwareliste, Autostart
-  über das Tray-Menü.
-
-Nichts davon ist signiert, SmartScreen meldet sich also beim ersten Start
-(„Weitere Informationen" → „Trotzdem ausführen"). Die Prüfsummen jedes
-Releases stehen auf der Release-Seite.
-
-## Restlos entfernen
-
-Beim Deinstallieren fragt das Setup, ob auch die persönlichen Daten weg
-sollen. Vorbelegt ist **Nein** — wer nur auf eine neue Fassung wechselt, soll
-seine Tastenbelegung behalten. Mit **Ja** bleibt nichts zurück.
-
-Für die portable Fassung, die keinen Uninstaller hat, gibt es denselben Weg
-von Hand:
-
-```
-wintangle.exe --cleanup
-```
-
-Entfernt wird in beiden Fällen:
-
-| Spur | Ort |
+| Action | Combination |
 |---|---|
-| Einstellungen | `%APPDATA%\WinTangle\` |
-| Autostart | `HKCU\…\CurrentVersion\Run` |
-| URL-Protokoll | `HKCU\Software\Classes\wintangle` |
-| Update-Zustand | `HKCU\Software\WinTangle` |
-| Windows-Andocken | `SPI_SETWINARRANGING` wird wieder eingeschaltet |
+| Left / right / top / bottom half | `Ctrl+Alt+←/→/↑/↓` |
+| Quarters | `Ctrl+Alt+U/I/J/K` |
+| Thirds | `Ctrl+Alt+D/F/G`, two thirds `Ctrl+Alt+E/T` |
+| Maximize | `Ctrl+Alt+Enter` |
+| Maximize height / width | `Ctrl+Alt+Shift+↑/↓` |
+| Larger / smaller | `Ctrl+Alt++` / `Ctrl+Alt+-` |
+| Center / restore | `Ctrl+Alt+C` / `Ctrl+Alt+Backspace` |
+| Next / previous display | `Ctrl+Alt+Win+→/←` |
+| Tile all / cascade all | `Ctrl+Alt+Shift+T` / `Ctrl+Alt+Shift+S` |
 
-Der letzte Punkt ist der leicht zu übersehende: das ist eine
-Windows-Einstellung, die WinTangle verändert haben kann, und sie bliebe sonst
-nach der Deinstallation abgeschaltet zurück.
+Sixths, eighths and ninths are deliberately unbound and reachable from the tray
+menu, the settings window or by URL.
 
-WinTangle schreibt ausschließlich unter `HKEY_CURRENT_USER` und ins
-Benutzerprofil — nichts davon ist systemweit, nichts braucht Administratorrechte.
+Pressing the same half binding again cycles the size: 1/2 → 2/3 → 1/3.
 
-## Updates
+## Configuration
 
-Die installierte Fassung prüft einmal täglich, ob es eine neue Version gibt,
-und bietet sie zur Installation an — dasselbe Verfahren wie bei Rectangle, dort
-über Sparkle, hier über [WinSparkle](https://winsparkle.org) (MIT-Lizenz).
-Abschalten im Tray-Menü oder in den Einstellungen; von Hand suchen über
-„Nach Updates suchen…".
-
-Technisch liest WinSparkle eine Appcast-XML von
-`releases/latest/download/appcast.xml`. GitHub leitet diese Adresse immer auf
-das neueste Release um, sie muss deshalb nie gepflegt werden. Die Datei
-entsteht im Release-Workflow aus `packaging/make_appcast.py`, die angezeigten
-Änderungen kommen aus der CHANGELOG.md.
-
-Der ZIP-Download aktualisiert sich genauso — er ersetzt sich dabei aber durch
-eine Installation, weil das Update den Installer ausführt.
-
-## CI und Releases
-
-`ci.yml` läuft bei jedem Push auf `main` und bei jedem Pull Request: Kern und
-Tests unter Linux, die komplette App mit MSVC unter Windows. Die dabei
-gebaute Exe hängt 14 Tage als Artefakt am Lauf.
-
-Ein Release entsteht durch einen Tag:
-
-```
-# Version in CMakeLists.txt und Abschnitt in CHANGELOG.md pflegen, dann
-git tag v0.1.0 && git push origin v0.1.0
-```
-
-`release.yml` baut daraufhin, testet und legt die Release-Seite an mit:
-Setup-Exe (Inno Setup), portablem ZIP, `SHA256SUMS.txt` und `appcast.xml`.
-Die Notizen bestehen aus dem CHANGELOG-Abschnitt zur Version, der Commit-Liste
-seit dem vorigen Tag und den Prüfsummen. Tags mit Suffix (`v0.2.0-rc1`) werden
-als Vorabversion markiert.
-
-Stimmt der Tag nicht mit der Version in `CMakeLists.txt` überein, bricht der
-Lauf ab — sonst stünde in der Exe eine andere Nummer als auf der Release-Seite.
-
-## Standardbelegung
-
-`Win+Pfeil` gehört dem Windows-eigenen Andocken und lässt sich mit
-`RegisterHotKey` nicht überschreiben — deshalb liegt alles auf `Ctrl+Alt`,
-genau wie Rectangles `⌃⌥`.
-
-| Aktion | Kombination |
-|---|---|
-| Linke / rechte / obere / untere Hälfte | `Ctrl+Alt+←/→/↑/↓` |
-| Viertel | `Ctrl+Alt+U/I/J/K` |
-| Drittel | `Ctrl+Alt+D/F/G`, zwei Drittel `Ctrl+Alt+E/T` |
-| Maximieren | `Ctrl+Alt+Enter` |
-| Höhe / Breite maximieren | `Ctrl+Alt+Shift+↑/↓` |
-| Größer / kleiner | `Ctrl+Alt++` / `Ctrl+Alt+-` |
-| Zentrieren / Wiederherstellen | `Ctrl+Alt+C` / `Ctrl+Alt+Backspace` |
-| Nächster / vorheriger Bildschirm | `Ctrl+Alt+Win+→/←` |
-| Alle kacheln / staffeln | `Ctrl+Alt+Shift+T` / `Ctrl+Alt+Shift+S` |
-
-Sechstel, Achtel und Neuntel sind bewusst unbelegt und über das Tray-Menü,
-den Einstellungsdialog oder die URL erreichbar.
-
-Wiederholtes Drücken derselben Hälften-Kombination zykliert die Größe:
-1/2 → 2/3 → 1/3.
-
-## Konfiguration
-
-`%APPDATA%\WinTangle\config.json`, im Einstellungsdialog bearbeitbar und
-dort auch importier-/exportierbar. Zeilenkommentare (`//`) sind erlaubt.
+`%APPDATA%\WinTangle\config.json`, editable in the settings window and
+importable/exportable from there. Line comments (`//`) are allowed.
 
 ```json
 {
@@ -176,73 +104,140 @@ dort auch importier-/exportierbar. Zeilenkommentare (`//`) sind erlaubt.
 }
 ```
 
-Ein vorhandener `shortcuts`-Block ersetzt die Standardbelegung vollständig;
-ein leerer Wert (`""`) hebt eine Belegung ausdrücklich auf.
+A `shortcuts` block replaces the default bindings entirely; an empty value
+(`""`) explicitly unbinds an action.
 
-## Aktionen per URL
+## Actions by URL
 
 ```
 wintangle://execute-action?name=left-half
 ```
 
-Gegenstück zu Rectangles `rectangle://`. Nützlich für Stream Deck, AutoHotkey
-oder Skripte. Das Protokoll wird beim Start unter `HKCU` angemeldet.
+The counterpart to Rectangle's `rectangle://`. Useful for Stream Deck,
+AutoHotkey or scripts. The protocol is registered under `HKCU` at startup.
 
-## Aufbau
+## Removing every trace
+
+When uninstalling, the setup asks whether the personal data should go too. The
+default is **No** — somebody merely moving to a new version should keep their
+key bindings. With **Yes**, nothing is left behind.
+
+The portable build has no uninstaller, so it offers the same by hand:
 
 ```
-src/core/      Geometrie, Aktionskatalog, Layouts, Historie, JSON, URI,
-               Snap-Zonen -- plattformfrei und vollständig unit-getestet
-src/config/    Konfigurationsmodell, Laden/Speichern/Migrieren
-src/platform/  Win32: Fensterzugriff, Monitore, Ausführung, WinMain
-src/app/       Hotkeys, Tray-Symbol, Autostart, URL-Schema, Pfade
-src/snap/      Drag-Erkennung und Vorschau-Overlay
-src/ui/        Einstellungsfenster
-packaging/     Inno-Setup-Skript und Appcast-Erzeugung
+wintangle.exe --cleanup
 ```
 
-Der Kern rechnet ausschließlich mit `Rect` und kennt kein `HWND`. Jede Aktion
-ist eine reine Funktion `(Fenster, Arbeitsfläche, Wiederholung) → Rect`;
-Hotkey, Tray-Menü, URL-Aufruf und Drag-Snap laufen alle durch denselben Pfad.
+Either way this is what gets removed:
 
-## Was auf Windows noch zu prüfen ist
+| Trace | Location |
+|---|---|
+| Settings | `%APPDATA%\WinTangle\` |
+| Autostart | `HKCU\…\CurrentVersion\Run` |
+| URL protocol | `HKCU\Software\Classes\wintangle` |
+| Update state | `HKCU\Software\WinTangle` |
+| Windows snapping | `SPI_SETWINARRANGING` is switched back on |
 
-1. Einzelmonitor bei 100 % — alle Tastenkombinationen.
-2. Zwei Monitore mit 100 % und 150 % und unterschiedlicher Auflösung —
-   Positionen exakt, kein Versatz beim Wechsel.
-3. Taskleiste links/oben/automatisch ausblenden — `rcWork` wird respektiert.
-4. Maximiertes Fenster → Hälfte → Wiederherstellen.
-5. Fenster mit Mindestgröße (Windows-Terminal-Einstellungen) — keine
-   Überlappung, Zykluskette bleibt intakt.
-6. Erhöhtes Fenster (Task-Manager) — einmalige Meldung statt stillem Nichtstun.
-7. Chrome, VS Code (Electron), eine WinUI-App, eine alte Win32-App — Electron
-   und WinUI sind die üblichen Ausreißer bei Schatten und DPI.
+That last one is the easy one to miss: it is a Windows setting WinTangle may
+have changed, and it would otherwise stay switched off after uninstalling.
 
-## Bekannte Grenzen
+WinTangle writes exclusively under `HKEY_CURRENT_USER` and into the user
+profile — nothing machine wide, nothing requiring administrator rights.
 
-* **Fenster erhöhter Prozesse** (Task-Manager, als Administrator gestartete
-  Programme) lassen sich nur anordnen, wenn WinTangle selbst erhöht läuft —
-  das ist eine Windows-Sicherheitsgrenze (UIPI), keine Lücke im Programm.
-  WinTangle meldet es einmalig statt still zu scheitern.
-* **Virtuelle Desktops** werden nicht umgeschaltet. `IVirtualDesktopManager`
-  ist offiziell nur lesend; alles andere hängt an undokumentierten
-  COM-Schnittstellen, die Microsoft pro Windows-Build ändert. An derselben
-  Grenze steht auch Rectangle Pro mit den macOS-Spaces.
-* **Drag-Snap und Windows-AeroSnap** reagieren auf dasselbe Ziehen an den
-  Rand. Im Einstellungsdialog lässt sich das Windows-eigene Andocken
-  abschalten.
+## Updates
 
-## Vorbild
+An installed copy checks once a day whether a new version exists and offers to
+install it — the same approach Rectangle takes through Sparkle, here through
+[WinSparkle](https://winsparkle.org) (MIT licence). Switch it off in the tray
+menu or the settings; check manually with "Check for Updates…".
 
-Rectangle von Ryan Hanson, MIT-Lizenz. WinTangle ist eine eigenständige
-Neuimplementierung für Win32 — übernommen sind Funktionsumfang, Standard-
-belegung und das Verhalten, kein Code.
+Technically WinSparkle reads an appcast XML from
+`releases/latest/download/appcast.xml`. GitHub always redirects that address to
+the newest release, so it never needs maintaining. The file is produced during
+the release workflow by `packaging/make_appcast.py`, and the changes it shows
+come from CHANGELOG.md.
 
-## Lizenz
+The ZIP download updates the same way — though doing so turns it into an
+installation, because the update runs the installer.
+
+## CI and releases
+
+`ci.yml` runs on every push to `main` and on every pull request: core and tests
+on Linux, the complete app with MSVC on Windows. The executable built there is
+attached to the run as an artifact for 14 days.
+
+A release is created by a tag:
+
+```
+# bump the version in CMakeLists.txt, add the CHANGELOG.md section, then
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+`release.yml` then builds, tests and creates the release page with the setup
+executable (Inno Setup), the portable ZIP, `SHA256SUMS.txt` and `appcast.xml`.
+The notes consist of the CHANGELOG section for that version, the commit list
+since the previous tag and the checksums. Tags with a suffix (`v0.2.0-rc1`) are
+marked as pre-releases.
+
+If the tag disagrees with the version in `CMakeLists.txt`, the run aborts —
+otherwise the executable would carry a different number than the release page.
+
+## Layout
+
+```
+src/core/      geometry, action catalogue, layouts, history, JSON, URI,
+               snap zones -- platform free and fully unit tested
+src/config/    configuration model, loading, saving, migrating
+src/platform/  Win32: window access, displays, execution, WinMain
+src/app/       hotkeys, tray icon, autostart, URL scheme, paths, cleanup
+src/snap/      drag detection and the preview overlay
+src/ui/        settings window
+packaging/     Inno Setup script and appcast generation
+```
+
+The core works purely with `Rect` and knows nothing about `HWND`. Every action
+is a pure function `(window, work area, repetition) → Rect`; hotkey, tray menu,
+URL call and drag-snap all run through the same path.
+
+## What still needs checking on Windows
+
+1. Single display at 100% — every key combination.
+2. Two displays at 100% and 150% with different resolutions — positions exact,
+   no drift when moving between them.
+3. Taskbar on the left, on top, auto-hiding — `rcWork` respected.
+4. Maximized window → half → restore.
+5. A window with a minimum size (Windows Terminal settings) — no overlap, the
+   cycling chain stays intact.
+6. An elevated window (Task Manager) — one clear notice instead of silence.
+7. Chrome, VS Code (Electron), a WinUI app, an old Win32 app — Electron and
+   WinUI are the usual outliers for shadows and DPI.
+8. Install, update and uninstall including the cleanup prompt.
+
+## Known limits
+
+* **Windows of elevated processes** (Task Manager, programs started as
+  administrator) can only be arranged when WinTangle itself runs elevated —
+  that is a Windows security boundary (UIPI), not a gap in the program.
+  WinTangle says so once instead of failing silently.
+* **Virtual desktops** are not switched. `IVirtualDesktopManager` is officially
+  read-only; everything beyond that hangs off undocumented COM interfaces that
+  Microsoft breaks between Windows builds. Rectangle Pro sits at the same
+  boundary with macOS Spaces.
+* **Drag-snap and Windows AeroSnap** both react to the same drag towards an
+  edge. Windows' own snapping can be switched off in the settings.
+
+## Prior art
+
+Rectangle by Ryan Hanson, MIT licence. WinTangle is an independent
+reimplementation for Win32 — what was taken over is the feature set, the
+default bindings and the behaviour, not any code.
+
+## Licence
 
 Copyright (C) 2026 Andreas Hacker
 
-WinTangle ist freie Software unter der [GNU General Public License v3](LICENSE)
-oder (nach Ihrer Wahl) einer späteren Version. Weitergabe und Veränderung sind
-erlaubt, solange abgeleitete Werke unter denselben Bedingungen stehen und ihren
-Quelltext offenlegen. Das Programm wird ohne jede Gewährleistung bereitgestellt.
+WinTangle is free software under the
+[GNU General Public License v3](LICENSE) or (at your option) any later version.
+Redistribution and modification are permitted as long as derived works carry
+the same terms and publish their source. The program comes with absolutely no
+warranty.

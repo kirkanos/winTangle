@@ -8,8 +8,8 @@
 namespace wintangle {
 namespace {
 
-// WinEvent-Callbacks sind freie Funktionen ohne Nutzdaten. Da es genau einen
-// Tracker gibt, reicht ein Zeiger auf die Instanz.
+// WinEvent callbacks are free functions without a user data parameter. Since
+// there is exactly one tracker, a pointer to the instance is enough.
 DragTracker* g_tracker = nullptr;
 
 constexpr UINT kPollIntervalMs = 30;
@@ -110,7 +110,7 @@ void DragTracker::UpdatePreview() {
     in.window = WindowRef(dragging_).Frame();
     in.workArea = monitor.work;
     in.gaps = config_->gaps;
-    // Beim Ziehen nie zyklieren -- der Zeiger steht fuer genau eine Position.
+    // Never cycle while dragging -- the cursor stands for exactly one spot.
     in.cycleSizes = false;
     in.repeat = 0;
 

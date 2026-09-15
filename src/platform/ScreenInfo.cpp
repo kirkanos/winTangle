@@ -7,9 +7,9 @@ namespace {
 
 UINT DpiForMonitor(HMONITOR mon) {
     UINT x = 96, y = 96;
-    // GetDpiForMonitor gibt es seit Windows 8.1; scheitert es, bleibt 96 --
-    // das ist nur fuer Skalierung von Zeichnungen relevant, nicht fuer die
-    // Fensterkoordinaten (die sind mit PerMonitorV2 immer physisch).
+    // GetDpiForMonitor exists since Windows 8.1; if it fails, 96 stands. That
+    // only matters for scaling what we draw, not for window coordinates (which
+    // are always physical under PerMonitorV2).
     if (SUCCEEDED(GetDpiForMonitor(mon, MDT_EFFECTIVE_DPI, &x, &y))) return x;
     return 96;
 }
@@ -66,7 +66,7 @@ std::optional<MonitorInfo> NeighborMonitor(HMONITOR current, int step) {
 
     const auto count = static_cast<int>(monitors.size());
     int index = static_cast<int>(std::distance(monitors.begin(), it)) + step;
-    index = ((index % count) + count) % count;  // zyklisch, auch bei negativem step
+    index = ((index % count) + count) % count;  // wraps, negative step included
     return monitors[static_cast<size_t>(index)];
 }
 

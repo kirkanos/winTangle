@@ -1,16 +1,16 @@
-// WinTangle -- Fenstermanagement fuer Windows nach dem Vorbild von Rectangle.
+// WinTangle -- window management for Windows, modelled on Rectangle for macOS.
 // Copyright (C) 2026 Andreas Hacker
 //
-// Dieses Programm ist freie Software: Sie koennen es unter den Bedingungen der
-// GNU General Public License, Version 3 oder (nach Ihrer Wahl) jeder spaeteren
-// Version, weitergeben und/oder veraendern. Es wird ohne jede Gewaehrleistung
-// bereitgestellt; siehe die Datei LICENSE bzw. <https://www.gnu.org/licenses/>.
+// This program is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software
+// Foundation, either version 3 of the License, or (at your option) any later
+// version. It comes with absolutely no warranty; see the LICENSE file or
+// <https://www.gnu.org/licenses/>.
 //
-// Aufbau: ein unsichtbares Nachrichtenfenster ist die Zentrale. Daran haengen
-// die globalen Hotkeys (WM_HOTKEY), das Tray-Symbol, der Named-Pipe-Lauscher
-// fuer wintangle://-Aufrufe und der Timer des Drag-Trackers. Alles laeuft im
-// selben Thread; die einzige Ausnahme ist der Pipe-Thread, der nur eine
-// Nachricht postet.
+// Structure: an invisible message window is the hub. Hanging off it are the
+// global hotkeys (WM_HOTKEY), the tray icon, the named pipe listener for
+// wintangle:// calls and the drag tracker's timer. Everything runs on the same
+// thread; the sole exception is the pipe thread, which only posts a message.
 
 #include <memory>
 #include <string>
@@ -45,7 +45,7 @@ public:
     bool Initialize();
     int Run();
 
-    // Eine beim Start mitgegebene wintangle://-URI ausfuehren.
+    // Run a wintangle:// URI that was passed in at startup.
     void RunUri(const std::string& uri);
 
 private:
@@ -54,7 +54,7 @@ private:
 
     void LoadConfig();
     void SaveConfig();
-    void ApplyConfig();          // Hotkeys, Snap-Tracker, AeroSnap-Schalter
+    void ApplyConfig();          // hotkeys, snap tracker, AeroSnap switch
     void RunAction(Action action);
     void ReportResult(Action action, ExecResult result);
     void HandleUriCommands();
@@ -73,8 +73,8 @@ private:
     UriServer uriServer_;
     Updater updater_;
 
-    // Damit die Meldung "Fenster gehoert einem Prozess mit hoeheren Rechten"
-    // nicht bei jedem Tastendruck erscheint.
+    // Keeps the "window belongs to a process with higher privileges" notice
+    // from appearing on every single key press.
     bool accessDeniedReported_ = false;
 };
 
@@ -87,8 +87,8 @@ void App::LoadConfig() {
     Config loaded;
     if (!Config::LoadFromFile(Narrow(path), loaded, error, &warnings)) {
         MessageBoxW(nullptr,
-                    (L"Die Konfiguration konnte nicht gelesen werden:\n" + Widen(error) +
-                     L"\n\nEs gelten die Standardeinstellungen.")
+                    (L"The configuration could not be read:\n" + Widen(error) +
+                     L"\n\nThe default settings apply.")
                         .c_str(),
                     L"WinTangle", MB_ICONWARNING | MB_OK);
         return;
@@ -113,16 +113,16 @@ void App::ApplyConfig() {
 
     const auto conflicts = hotkeys_->Apply(config_);
     if (!conflicts.empty() && tray_) {
-        std::wstring text = L"Bereits von einem anderen Programm belegt:\n";
+        std::wstring text = L"Already taken by another program:\n";
         for (const auto& c : conflicts) {
             text += L"• " + c.combo + L" (" + Widen(std::string(ActionLabel(c.action))) + L")\n";
         }
-        tray_->ShowBalloon(L"Tastenkombinationen nicht verfügbar", text, true);
+        tray_->ShowBalloon(L"Key combinations unavailable", text, true);
     }
 
-    // Das Windows-eigene Andocken wuerde sonst mit unseren Snap-Bereichen
-    // konkurrieren: beide reagieren auf dasselbe Ziehen an den Rand.
-    // SPI_SETWINARRANGING nimmt den Wert direkt in pvParam, nicht als Zeiger.
+    // Windows' own snapping would otherwise compete with our snap areas: both
+    // react to the same drag towards an edge.
+    // SPI_SETWINARRANGING takes the value directly in pvParam, not a pointer.
     const UINT_PTR arranging = config_.disableWindowsSnap ? FALSE : TRUE;
     SystemParametersInfoW(SPI_SETWINARRANGING, 0, reinterpret_cast<void*>(arranging),
                           SPIF_SENDCHANGE);
@@ -140,12 +140,12 @@ bool App::Initialize() {
     wc.lpszClassName = kWindowClass;
     if (!RegisterClassExW(&wc)) return false;
 
-    // HWND_MESSAGE: unsichtbares Fenster, das nur Nachrichten bekommt.
+    // HWND_MESSAGE: an invisible window that only receives messages.
     hwnd_ = CreateWindowExW(0, kWindowClass, L"WinTangle", 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr,
                             instance_, this);
     if (!hwnd_) return false;
 
-    // Nach einem Absturz des Explorers muss das Tray-Symbol neu angemeldet werden.
+    // After Explorer crashes the tray icon has to be registered again.
     taskbarCreatedMsg_ = RegisterWindowMessageW(L"TaskbarCreated");
 
     executor_ = std::make_unique<Executor>(config_);
@@ -168,8 +168,8 @@ bool App::Initialize() {
         SaveConfig();
     });
 
-    // WinSparkle erst starten, wenn die Konfiguration steht -- der Schalter
-    // fuer die automatische Pruefung geht direkt an die Bibliothek.
+    // Only start WinSparkle once the configuration is in place -- the switch
+    // for automatic checks goes straight to the library.
     updater_.Initialize(Widen(WINTANGLE_VERSION), config_.automaticUpdates);
 
     uriServer_.Start(hwnd_);
@@ -181,8 +181,8 @@ bool App::Initialize() {
 int App::Run() {
     MSG msg{};
     while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
-        // Die Einstellungen sind ein normales Fenster: Tab und Eingabetaste
-        // muessen dort funktionieren.
+        // The settings are an ordinary window: tab and enter have to work
+        // inside it.
         if (settings_ && settings_->IsOpen() && IsDialogMessageW(settings_->Handle(), &msg)) {
             continue;
         }
@@ -299,9 +299,9 @@ void App::ReportResult(Action action, ExecResult result) {
 
     accessDeniedReported_ = true;
     tray_->ShowBalloon(
-        L"Fenster nicht verschiebbar",
-        L"Dieses Fenster gehört einem Prozess mit höheren Rechten. Damit WinTangle es "
-        L"anordnen kann, muss WinTangle selbst als Administrator laufen.",
+        L"Window cannot be moved",
+        L"This window belongs to a process with higher privileges. For WinTangle to "
+        L"arrange it, WinTangle itself has to run as administrator.",
         true);
     (void)action;
 }
@@ -314,23 +314,23 @@ void App::HandleUriCommands() {
         if (!name.empty() && ActionFromName(name, action)) {
             RunAction(action);
         } else if (tray_) {
-            tray_->ShowBalloon(L"Unbekannter Aufruf", Widen(uri), true);
+            tray_->ShowBalloon(L"Unknown call", Widen(uri), true);
         }
     }
 }
 
 void App::ShowAbout() {
-    // GPL v3 §5(d): ein interaktives Programm muss den Lizenzhinweis anzeigen.
+    // GPL v3 section 5(d): an interactive program has to show the licence.
     MessageBoxW(nullptr,
-                L"WinTangle\n\nFensteranordnung per Tastenkombination und Ziehen,\n"
-                L"nach dem Vorbild von Rectangle für macOS.\n\n"
-                L"Aktionen lassen sich auch per URL auslösen:\n"
+                L"WinTangle\n\nWindow arrangement by keyboard and by dragging,\n"
+                L"modelled on Rectangle for macOS.\n\n"
+                L"Actions can also be triggered by URL:\n"
                 L"wintangle://execute-action?name=left-half\n\n"
                 L"Version " WINTANGLE_VERSION_W L"\n"
                 L"Copyright (C) 2026 Andreas Hacker\n"
-                L"Freie Software unter der GNU General Public License v3 oder später.\n"
-                L"Ohne jede Gewährleistung. Einzelheiten in der Datei LICENSE.",
-                L"Über WinTangle", MB_ICONINFORMATION | MB_OK);
+                L"Free software under the GNU General Public License v3 or later.\n"
+                L"Comes with absolutely no warranty. See the LICENSE file.",
+                L"About WinTangle", MB_ICONINFORMATION | MB_OK);
 }
 
 }  // namespace
@@ -339,35 +339,34 @@ void App::ShowAbout() {
 namespace wintangle {
 namespace {
 
-// "--cleanup" entfernt alle Spuren und beendet sich wieder. Wird vom
-// Uninstaller aufgerufen und steht portablen Nutzern zur Verfuegung, die kein
-// Setup haben. Mit "--silent" ohne Rueckfrage und ohne Meldung.
+// "--cleanup" removes every trace and exits again. Called by the uninstaller,
+// and available to portable users who have no setup. With "--silent" it runs
+// without asking and without reporting.
 int RunCleanup(bool silent, bool appRunning) {
     if (appRunning && !silent) {
         MessageBoxW(nullptr,
-                    L"WinTangle läuft noch. Bitte erst über das Symbol im "
-                    L"Infobereich beenden und dann erneut aufrufen.",
-                    L"WinTangle aufräumen", MB_ICONWARNING | MB_OK);
+                    L"WinTangle is still running. Quit it from the notification "
+                    L"area icon first, then run this again.",
+                    L"Clean up WinTangle", MB_ICONWARNING | MB_OK);
         return 1;
     }
     if (!silent) {
         const int answer = MessageBoxW(
             nullptr,
-            L"Alle Spuren von WinTangle entfernen?\n\n"
-            L"• Einstellungen und Tastenbelegung\n"
-            L"• Autostart-Eintrag\n"
-            L"• URL-Protokoll wintangle://\n"
-            L"• gespeicherter Update-Zustand\n\n"
-            L"Das Windows-eigene Andocken wird wieder eingeschaltet, falls "
-            L"WinTangle es abgeschaltet hat. Das Programm selbst wird dabei "
-            L"nicht gelöscht.",
-            L"WinTangle aufräumen", MB_ICONQUESTION | MB_YESNO | MB_DEFBUTTON2);
+            L"Remove every trace of WinTangle?\n\n"
+            L"• settings and key bindings\n"
+            L"• autostart entry\n"
+            L"• URL protocol wintangle://\n"
+            L"• stored update state\n\n"
+            L"Windows' own snapping is switched back on if WinTangle turned it "
+            L"off. The program itself is not deleted.",
+            L"Clean up WinTangle", MB_ICONQUESTION | MB_YESNO | MB_DEFBUTTON2);
         if (answer != IDYES) return 0;
     }
 
     const CleanupReport report = RemoveAllTraces();
     if (!silent) {
-        MessageBoxW(nullptr, FormatCleanupReport(report).c_str(), L"WinTangle aufgeräumt",
+        MessageBoxW(nullptr, FormatCleanupReport(report).c_str(), L"WinTangle cleaned up",
                     report.failed.empty() ? MB_ICONINFORMATION | MB_OK : MB_ICONWARNING | MB_OK);
     }
     return report.failed.empty() ? 0 : 1;
@@ -383,8 +382,8 @@ bool HasFlag(std::wstring_view args, std::wstring_view flag) {
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int) {
     using namespace wintangle;
 
-    // Zweite Instanz: eine eventuell mitgegebene wintangle://-URI an die
-    // laufende Instanz weiterreichen und sich sofort beenden.
+    // Second instance: hand any wintangle:// URI over to the running instance
+    // and exit right away.
     HANDLE mutex = CreateMutexW(nullptr, TRUE, kMutexName);
     const bool alreadyRunning = mutex && GetLastError() == ERROR_ALREADY_EXISTS;
 
@@ -401,7 +400,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int) {
         if (!ParseExecuteActionUri(args).empty()) {
             SendUriToRunningInstance(args);
         } else {
-            MessageBoxW(nullptr, L"WinTangle läuft bereits (Symbol im Infobereich).", L"WinTangle",
+            MessageBoxW(nullptr, L"WinTangle is already running (notification area).", L"WinTangle",
                         MB_ICONINFORMATION | MB_OK);
         }
         if (mutex) CloseHandle(mutex);
@@ -410,13 +409,13 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int) {
 
     App app(instance);
     if (!app.Initialize()) {
-        MessageBoxW(nullptr, L"WinTangle konnte nicht gestartet werden.", L"WinTangle",
+        MessageBoxW(nullptr, L"WinTangle could not be started.", L"WinTangle",
                     MB_ICONERROR | MB_OK);
         if (mutex) CloseHandle(mutex);
         return 1;
     }
 
-    // Eine URI, die den Start ausgeloest hat, gleich ausfuehren.
+    // Run a URI that triggered the start straight away.
     if (!args.empty()) app.RunUri(args);
 
     const int code = app.Run();

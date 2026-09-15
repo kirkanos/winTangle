@@ -1,5 +1,5 @@
-// Gemeinsamer Windows-Header. Wird von allem im Win32-Teil zuerst eingebunden,
-// damit die Reihenfolge und die Lean-Defines ueberall gleich sind.
+// Shared Windows header. Included first by everything in the Win32 layer so
+// the include order and the lean defines are the same everywhere.
 #pragma once
 
 #ifndef WIN32_LEAN_AND_MEAN
@@ -24,12 +24,12 @@ namespace wintangle {
 inline Rect FromRECT(const RECT& r) { return Rect{r.left, r.top, r.right, r.bottom}; }
 inline RECT ToRECT(const Rect& r) { return RECT{r.left, r.top, r.right, r.bottom}; }
 
-// UTF-8 <-> UTF-16, weil der plattformfreie Kern mit std::string arbeitet und
-// Win32 durchgehend mit Wide Strings angesprochen wird.
+// UTF-8 <-> UTF-16, because the platform free core works with std::string
+// while Win32 is addressed with wide strings throughout.
 std::wstring Widen(std::string_view utf8);
 std::string Narrow(std::wstring_view utf16);
 
-// Letzter Win32-Fehler als lesbarer Text, fuer Log und Meldungen.
+// The last Win32 error as readable text, for logs and messages.
 std::wstring LastErrorMessage(DWORD code = GetLastError());
 
 }  // namespace wintangle

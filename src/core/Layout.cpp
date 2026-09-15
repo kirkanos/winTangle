@@ -5,9 +5,9 @@
 namespace wintangle {
 namespace {
 
-// Zeilen-/Spaltenraster. `cols` Spalten, Zeilen ergeben sich; die letzte Zeile
-// darf teilbesetzt sein, ihre Fenster werden dann breiter verteilt, damit kein
-// Loch im Raster bleibt.
+// Row and column grid. `cols` columns, the rows follow from that; the last row
+// may be partially filled, in which case its windows are spread wider so the
+// grid has no hole in it.
 std::vector<Rect> Grid(size_t count, size_t cols, const Rect& area, const Gaps& gaps) {
     std::vector<Rect> out;
     if (count == 0 || cols == 0) return out;
@@ -28,7 +28,7 @@ std::vector<Rect> Grid(size_t count, size_t cols, const Rect& area, const Gaps& 
     return out;
 }
 
-// Gestaffelt: gleich große Fenster, jeweils um einen festen Schritt versetzt.
+// Cascaded: equally sized windows, each offset by a fixed step.
 std::vector<Rect> Cascade(size_t count, const Rect& area, const Gaps& gaps) {
     std::vector<Rect> out;
     if (count == 0) return out;
@@ -37,7 +37,7 @@ std::vector<Rect> Cascade(size_t count, const Rect& area, const Gaps& gaps) {
     const int stepX = std::max(24, bounds.Width() / 32);
     const int stepY = std::max(24, bounds.Height() / 24);
 
-    // Fenstergröße so wählen, dass auch das hinterste noch vollständig passt.
+    // Pick a size such that even the rearmost window still fits completely.
     const int w = bounds.Width() - stepX * static_cast<int>(count - 1);
     const int h = bounds.Height() - stepY * static_cast<int>(count - 1);
     const int useW = std::max(w, bounds.Width() / 2);

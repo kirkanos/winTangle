@@ -9,24 +9,24 @@ namespace wintangle {
 
 struct MonitorInfo {
     HMONITOR handle = nullptr;
-    Rect bounds;   // gesamter Monitor
-    Rect work;     // ohne Taskleiste und angedockte Leisten
+    Rect bounds;   // the whole display
+    Rect work;     // without the taskbar and docked appbars
     UINT dpi = 96;
     bool primary = false;
 
     bool IsValid() const { return handle != nullptr; }
 };
 
-// Alle Monitore, sortiert von links nach rechts und dann von oben nach unten.
-// Diese Reihenfolge bestimmt, was "naechster Bildschirm" bedeutet.
+// Every display, sorted left to right and then top to bottom. That order is
+// what "next display" means.
 std::vector<MonitorInfo> EnumerateMonitors();
 
 MonitorInfo MonitorForWindow(HWND hwnd);
 MonitorInfo MonitorForPoint(POINT pt);
 
-// Nachbarmonitor in der sortierten Liste; laeuft zyklisch um, damit
-// "naechster Bildschirm" auf dem letzten Monitor wieder beim ersten landet.
-// Gibt nullopt zurueck, wenn es nur einen Monitor gibt.
+// Neighbouring display in that sorted list; wraps around, so "next display"
+// goes back to the first one from the last. Returns nullopt when there is only
+// a single display.
 std::optional<MonitorInfo> NeighborMonitor(HMONITOR current, int step);
 
 }  // namespace wintangle

@@ -7,18 +7,18 @@
 namespace wintangle {
 
 struct WindowFilter {
-    // Nur Fenster auf diesem Monitor (nullptr = alle).
+    // Only windows on this display (nullptr = all).
     HMONITOR monitor = nullptr;
-    // Nur Fenster dieses Prozesses (0 = alle). Fuer "aktive App staffeln".
+    // Only windows of this process (0 = all). For "cascade active app".
     DWORD processId = 0;
-    // Minimierte Fenster mitnehmen und dabei wiederherstellen.
+    // Include minimized windows, restoring them in the process.
     bool includeMinimized = false;
-    // Obergrenze, damit ein Kachelbefehl bei 30 offenen Fenstern nicht den
-    // Desktop unbrauchbar macht.
+    // Upper bound, so a tile command with 30 open windows does not turn the
+    // desktop into confetti.
     size_t maxCount = 12;
 };
 
-// Alle anordbaren Fenster in Z-Order (vorderstes zuerst).
+// Every arrangeable window in z-order (frontmost first).
 std::vector<WindowRef> ListWindows(const WindowFilter& filter);
 
 DWORD ProcessIdOf(HWND hwnd);

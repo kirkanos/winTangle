@@ -6,13 +6,13 @@
 
 namespace wintangle {
 
-// %APPDATA%\WinTangle, wird beim ersten Aufruf angelegt.
+// %APPDATA%\WinTangle, created on first use.
 std::wstring AppDataDir();
 
 // %APPDATA%\WinTangle\config.json
 std::wstring ConfigPath();
 
-// Vollstaendiger Pfad zur eigenen Exe (fuer Autostart und URL-Protokoll).
+// Full path to our own executable (for autostart and the URL protocol).
 std::wstring ExecutablePath();
 
 }  // namespace wintangle

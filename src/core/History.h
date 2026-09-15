@@ -9,49 +9,48 @@
 
 namespace wintangle {
 
-// Merkt sich pro Fenster, was zuletzt passiert ist. Zwei Dinge hängen daran:
+// Remembers per window what happened last. Two things depend on it:
 //
-//  1. Restore  – der Rahmen, den das Fenster hatte, bevor WinTangle es das
-//                erste Mal angefasst hat.
-//  2. Zyklus   – wie oft dieselbe Aktion direkt hintereinander ausgeführt
-//                wurde (linke Hälfte -> zwei Drittel -> ein Drittel).
+//  1. Restore  the frame the window had before WinTangle first touched it.
+//  2. Cycling  how often the same action ran back to back (left half ->
+//              two thirds -> one third).
 //
-// Beides wird ungültig, sobald das Fenster von außen bewegt oder in der Größe
-// verändert wurde. Deshalb wird zusätzlich der Rahmen gespeichert, den wir
-// zuletzt gesetzt haben: weicht der aktuelle davon ab, war jemand anderes dran.
+// Both become invalid as soon as the window is moved or resized from the
+// outside. That is why the frame we set last is stored as well: if the current
+// one differs, somebody else has been at it.
 class History {
 public:
-    // Eindeutige Fenster-ID (unter Windows der HWND als Zahl).
+    // Unique window id (the HWND as a number on Windows).
     using WindowId = std::uint64_t;
 
     struct Entry {
         Action lastAction = Action::Count_;
-        int repeat = 0;        // Anzahl bisheriger identischer Ausführungen
-        Rect appliedRect;      // was wir zuletzt gesetzt haben
-        Rect restoreRect;      // Rahmen vor der ersten Aktion
+        int repeat = 0;        // number of identical invocations so far
+        Rect appliedRect;      // what we set last
+        Rect restoreRect;      // frame before the first action
         bool hasRestore = false;
     };
 
-    // Wie oft `action` bereits direkt hintereinander auf dieses Fenster
-    // angewandt wurde. 0, wenn die Kette unterbrochen ist.
+    // How often `action` has already been applied to this window back to
+    // back. 0 when the chain is broken.
     int RepeatCountFor(WindowId id, Action action, const Rect& currentRect) const;
 
-    // Der Rahmen vor der ersten WinTangle-Aktion, falls bekannt.
+    // The frame before the first WinTangle action, if known.
     std::optional<Rect> RestoreRectFor(WindowId id) const;
 
-    // Nach erfolgreicher Ausführung aufrufen. `before` ist der Rahmen vor der
-    // Aktion, `after` der tatsächlich gesetzte.
+    // Call after a successful invocation. `before` is the frame prior to the
+    // action, `after` the one actually applied.
     void Record(WindowId id, Action action, const Rect& before, const Rect& after);
 
-    // Fenster wurde geschlossen bzw. Eintrag wird nicht mehr gebraucht.
+    // Window was closed, or the entry is no longer needed.
     void Forget(WindowId id);
 
     size_t Size() const { return entries_.size(); }
 
 private:
-    // Toleranz, mit der ein gesetzter Rahmen als "unverändert" gilt. Manche
-    // Apps korrigieren ihre Größe um ein paar Pixel (Mindestgröße, Rasterung),
-    // das darf die Zykluskette nicht zerreißen.
+    // Tolerance within which an applied frame still counts as "unchanged".
+    // Some apps adjust their size by a few pixels (minimum size, grid
+    // snapping); that must not tear the cycling chain apart.
     static constexpr int kTolerance = 8;
 
     static bool NearlyEqual(const Rect& a, const Rect& b);

@@ -5,35 +5,35 @@
 
 namespace wintangle {
 
-// Entfernt restlos alle Spuren, die WinTangle auf dem System hinterlaesst.
+// Removes every trace WinTangle leaves on the system.
 //
-// Es sind genau fuenf, und sie stehen alle unter HKEY_CURRENT_USER bzw. im
-// Benutzerprofil -- WinTangle schreibt nirgends systemweit:
+// There are exactly five, and all of them live under HKEY_CURRENT_USER or in
+// the user profile -- WinTangle never writes machine wide:
 //
-//   1. %APPDATA%\WinTangle\            Konfiguration
-//   2. HKCU\...\CurrentVersion\Run     Autostart-Eintrag
-//   3. HKCU\Software\Classes\wintangle URL-Protokoll
-//   4. HKCU\Software\WinTangle         Update-Zustand von WinSparkle
-//   5. SPI_SETWINARRANGING             Windows-eigenes Andocken, falls das
-//                                      Programm es abgeschaltet hat
+//   1. %APPDATA%\WinTangle\            configuration
+//   2. HKCU\...\CurrentVersion\Run     autostart entry
+//   3. HKCU\Software\Classes\wintangle URL protocol
+//   4. HKCU\Software\WinTangle         WinSparkle's update state
+//   5. SPI_SETWINARRANGING             Windows' own snapping, if the program
+//                                      turned it off
 //
-// Punkt 5 ist der leicht zu uebersehende: das ist eine Windows-Einstellung,
-// die WinTangle veraendert haben kann. Sie bleibt sonst nach der
-// Deinstallation abgeschaltet zurueck.
+// Number five is the one that is easy to miss: that is a Windows setting the
+// program may have changed, and it would otherwise stay switched off after
+// uninstalling.
 //
-// Diese Funktion ist die einzige Stelle, an der diese Liste gepflegt wird --
-// der Uninstaller ruft sie ueber "wintangle.exe --cleanup" auf, statt die
-// Loeschungen in seinem eigenen Skript zu wiederholen.
+// This function is the only place that list is maintained -- the uninstaller
+// calls it through "wintangle.exe --cleanup" rather than repeating the
+// deletions in its own script.
 struct CleanupReport {
-    std::vector<std::wstring> removed;  // was tatsaechlich entfernt wurde
-    std::vector<std::wstring> failed;   // was nicht entfernt werden konnte
+    std::vector<std::wstring> removed;  // what was actually removed
+    std::vector<std::wstring> failed;   // what could not be removed
 
     bool AnythingRemoved() const { return !removed.empty(); }
 };
 
 CleanupReport RemoveAllTraces();
 
-// Aufbereitet fuer eine Meldung an den Benutzer.
+// Formatted for a message to the user.
 std::wstring FormatCleanupReport(const CleanupReport& report);
 
 }  // namespace wintangle

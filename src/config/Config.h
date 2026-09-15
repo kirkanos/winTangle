@@ -11,29 +11,29 @@
 
 namespace wintangle {
 
-// Die komplette Konfiguration. Plattformfrei, damit Laden/Speichern/Migrieren
-// ohne Windows testbar ist; nur der Pfad zur Datei kommt aus dem Win32-Teil.
+// The complete configuration. Platform free, so loading, saving and migrating
+// stay testable without Windows; only the file path comes from the Win32 layer.
 struct Config {
-    // Version des Dateiformats, damit spaetere Migrationen moeglich sind.
+    // File format version, so later migrations remain possible.
     static constexpr int kVersion = 1;
 
     Gaps gaps;
-    bool cycleSizes = true;       // wiederholter Druck zykliert 1/2 -> 2/3 -> 1/3
-    bool snapAreasEnabled = true; // Drag an den Bildschirmrand
-    bool disableWindowsSnap = false;  // Windows-eigenes AeroSnap abschalten
+    bool cycleSizes = true;       // repeated presses cycle 1/2 -> 2/3 -> 1/3
+    bool snapAreasEnabled = true; // dragging to the screen edge
+    bool disableWindowsSnap = false;  // turn off Windows' own AeroSnap
     bool launchAtLogin = false;
     bool moveCursorWithWindow = false;
-    bool automaticUpdates = true;   // taegliche Pruefung via WinSparkle
+    bool automaticUpdates = true;   // daily check via WinSparkle
 
-    // Exe-Namen (klein geschrieben, ohne Pfad), fuer die WinTangle nichts tut.
+    // Executable names (lower case, without path) WinTangle keeps its hands off.
     std::vector<std::string> ignoredApps;
 
-    // Nur belegte Aktionen stehen drin. Eine Aktion ohne Eintrag hat bewusst
-    // keinen Hotkey.
+    // Only bound actions appear here. An action without an entry deliberately
+    // has no hotkey.
     std::map<Action, Shortcut> shortcuts;
 
-    // Rectangle-Vorgaben, uebersetzt nach Windows: ⌃⌥ wird zu Ctrl+Alt,
-    // ⌘ zu Win. Win+Pfeil bleibt frei, weil Windows das selbst belegt.
+    // Rectangle's defaults translated to Windows: ⌃⌥ becomes Ctrl+Alt, ⌘
+    // becomes Win. Win+arrow stays free because Windows claims it itself.
     static Config Defaults();
 
     std::optional<Shortcut> ShortcutFor(Action a) const;
@@ -41,10 +41,10 @@ struct Config {
 
     std::string ToJson() const;
 
-    // Liest die Konfiguration. Unbekannte Felder werden ignoriert, fehlende
-    // aus den Vorgaben ergaenzt. `warnings` sammelt alles, was uebersprungen
-    // wurde (unbekannte Aktion, unlesbarer Shortcut) -- die Datei wird
-    // deswegen nie verworfen.
+    // Reads the configuration. Unknown fields are ignored, missing ones are
+    // filled in from the defaults. `warnings` collects everything that was
+    // skipped (unknown action, unreadable shortcut) -- the file is never
+    // discarded because of it.
     static bool FromJson(std::string_view text, Config& out, std::string& error,
                          std::vector<std::string>* warnings = nullptr);
 

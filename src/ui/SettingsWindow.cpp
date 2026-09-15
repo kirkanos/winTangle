@@ -42,7 +42,7 @@ HWND MakeControl(HWND parent, const wchar_t* cls, const wchar_t* text, DWORD sty
     HWND control = CreateWindowExW(0, cls, text, WS_CHILD | WS_VISIBLE | style, x, y, w, h, parent,
                                    reinterpret_cast<HMENU>(static_cast<INT_PTR>(id)), instance,
                                    nullptr);
-    // Ohne die Systemschrift sehen selbst gebaute Fenster aus wie Windows 95.
+    // Without the system font, hand built windows look like Windows 95.
     SendMessageW(control, WM_SETFONT,
                  reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)), TRUE);
     return control;
@@ -71,7 +71,7 @@ bool ChooseFile(HWND owner, bool save, std::wstring& path) {
     OPENFILENAMEW ofn{};
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = owner;
-    ofn.lpstrFilter = L"WinTangle-Konfiguration (*.json)\0*.json\0Alle Dateien\0*.*\0";
+    ofn.lpstrFilter = L"WinTangle configuration (*.json)\0*.json\0All files\0*.*\0";
     ofn.lpstrFile = buffer;
     ofn.nMaxFile = static_cast<DWORD>(std::size(buffer));
     ofn.lpstrDefExt = L"json";
@@ -116,7 +116,7 @@ void SettingsWindow::Show() {
     wc.hIcon = LoadIconW(instance_, L"APPICON");
     RegisterClassExW(&wc);
 
-    hwnd_ = CreateWindowExW(0, kClassName, L"WinTangle – Einstellungen",
+    hwnd_ = CreateWindowExW(0, kClassName, L"WinTangle Settings",
                             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT,
                             CW_USEDEFAULT, 720, 620, nullptr, nullptr, instance_, this);
     if (!hwnd_) return;
@@ -163,7 +163,7 @@ LRESULT CALLBACK SettingsWindow::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
         case WM_NOTIFY: {
             if (!self) break;
             auto* header = reinterpret_cast<NMHDR*>(lp);
-            // Doppelklick auf eine Zeile springt direkt ins Aufnahmefeld.
+            // Double clicking a row jumps straight into the capture field.
             if (header->idFrom == kIdList && header->code == NM_DBLCLK) {
                 SetFocus(self->recorder_);
                 return 0;
@@ -182,8 +182,8 @@ LRESULT CALLBACK SettingsWindow::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
     return DefWindowProcW(hwnd, msg, wp, lp);
 }
 
-// Das Aufnahmefeld schluckt jeden Tastendruck und zeigt ihn als Kombination an,
-// statt Text einzugeben.
+// The capture field swallows every key press and displays it as a combination
+// instead of entering text.
 LRESULT CALLBACK SettingsWindow::RecorderProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp,
                                               UINT_PTR id, DWORD_PTR ref) {
     auto* self = reinterpret_cast<SettingsWindow*>(ref);
@@ -192,7 +192,7 @@ LRESULT CALLBACK SettingsWindow::RecorderProc(HWND hwnd, UINT msg, WPARAM wp, LP
         case WM_KEYDOWN:
         case WM_SYSKEYDOWN: {
             const unsigned vk = static_cast<unsigned>(wp);
-            // Modifier alleine ergeben noch keine Kombination.
+            // Modifiers on their own are not a combination yet.
             const bool isModifier = vk == VK_CONTROL || vk == VK_MENU || vk == VK_SHIFT ||
                                     vk == VK_LWIN || vk == VK_RWIN;
             if (isModifier) return 0;
@@ -205,7 +205,7 @@ LRESULT CALLBACK SettingsWindow::RecorderProc(HWND hwnd, UINT msg, WPARAM wp, LP
             s.vk = vk;
 
             if (s.mods == 0 || KeyName(s.vk).empty()) {
-                SetWindowTextW(hwnd, L"Mit Modifier drücken (Ctrl/Alt/Shift/Win)");
+                SetWindowTextW(hwnd, L"Hold a modifier (Ctrl/Alt/Shift/Win)");
                 self->recorded_ = Shortcut{};
                 return 0;
             }
@@ -215,7 +215,7 @@ LRESULT CALLBACK SettingsWindow::RecorderProc(HWND hwnd, UINT msg, WPARAM wp, LP
         }
         case WM_CHAR:
         case WM_SYSCHAR:
-            return 0;  // kein Text im Aufnahmefeld
+            return 0;  // no text in the capture field
         case WM_NCDESTROY:
             RemoveWindowSubclass(hwnd, RecorderProc, id);
             break;
@@ -226,7 +226,7 @@ LRESULT CALLBACK SettingsWindow::RecorderProc(HWND hwnd, UINT msg, WPARAM wp, LP
 }
 
 void SettingsWindow::CreateControls(HWND parent) {
-    MakeControl(parent, WC_STATICW, L"Aktionen und Tastenkombinationen", 0, 12, 10, 400, 18, -1,
+    MakeControl(parent, WC_STATICW, L"Actions and key combinations", 0, 12, 10, 400, 18, -1,
                 instance_);
 
     list_ = CreateWindowExW(WS_EX_CLIENTEDGE, WC_LISTVIEWW, L"",
@@ -239,53 +239,53 @@ void SettingsWindow::CreateControls(HWND parent) {
     LVCOLUMNW col{};
     col.mask = LVCF_TEXT | LVCF_WIDTH;
     col.cx = 420;
-    col.pszText = const_cast<wchar_t*>(L"Aktion");
+    col.pszText = const_cast<wchar_t*>(L"Action");
     ListView_InsertColumn(list_, 0, &col);
     col.cx = 240;
-    col.pszText = const_cast<wchar_t*>(L"Tastenkombination");
+    col.pszText = const_cast<wchar_t*>(L"Key combination");
     ListView_InsertColumn(list_, 1, &col);
 
-    MakeControl(parent, WC_STATICW, L"Neue Kombination:", 0, 12, 374, 120, 18, -1, instance_);
+    MakeControl(parent, WC_STATICW, L"New combination:", 0, 12, 374, 120, 18, -1, instance_);
     recorder_ = MakeControl(parent, WC_EDITW, L"", WS_BORDER | ES_READONLY, 136, 371, 220, 24,
                             kIdRecorder, instance_);
     SetWindowSubclass(recorder_, RecorderProc, kIdRecorder, reinterpret_cast<DWORD_PTR>(this));
 
-    MakeControl(parent, WC_BUTTONW, L"Zuweisen", BS_PUSHBUTTON, 366, 371, 100, 24, kIdAssign,
+    MakeControl(parent, WC_BUTTONW, L"Assign", BS_PUSHBUTTON, 366, 371, 100, 24, kIdAssign,
                 instance_);
-    MakeControl(parent, WC_BUTTONW, L"Entfernen", BS_PUSHBUTTON, 474, 371, 100, 24, kIdClear,
+    MakeControl(parent, WC_BUTTONW, L"Remove", BS_PUSHBUTTON, 474, 371, 100, 24, kIdClear,
                 instance_);
 
-    MakeControl(parent, WC_STATICW, L"Außenabstand (px):", 0, 12, 416, 130, 18, -1, instance_);
+    MakeControl(parent, WC_STATICW, L"Outer gap (px):", 0, 12, 416, 130, 18, -1, instance_);
     outerGap_ = MakeControl(parent, WC_EDITW, L"0", WS_BORDER | ES_NUMBER, 146, 413, 60, 22,
                             kIdOuterGap, instance_);
-    MakeControl(parent, WC_STATICW, L"Innenabstand (px):", 0, 226, 416, 130, 18, -1, instance_);
+    MakeControl(parent, WC_STATICW, L"Inner gap (px):", 0, 226, 416, 130, 18, -1, instance_);
     innerGap_ = MakeControl(parent, WC_EDITW, L"0", WS_BORDER | ES_NUMBER, 360, 413, 60, 22,
                             kIdInnerGap, instance_);
 
-    checkCycle_ = MakeControl(parent, WC_BUTTONW, L"Größen zyklieren (1/2 → 2/3 → 1/3)",
+    checkCycle_ = MakeControl(parent, WC_BUTTONW, L"Cycle sizes (1/2 → 2/3 → 1/3)",
                               BS_AUTOCHECKBOX, 12, 446, 320, 20, kIdCheckCycle, instance_);
-    checkSnap_ = MakeControl(parent, WC_BUTTONW, L"Snap-Bereiche beim Ziehen", BS_AUTOCHECKBOX, 12,
+    checkSnap_ = MakeControl(parent, WC_BUTTONW, L"Snap areas while dragging", BS_AUTOCHECKBOX, 12,
                              470, 320, 20, kIdCheckSnap, instance_);
     checkDisableAero_ =
-        MakeControl(parent, WC_BUTTONW, L"Windows-eigenes Andocken abschalten", BS_AUTOCHECKBOX,
+        MakeControl(parent, WC_BUTTONW, L"Turn off Windows' own snapping", BS_AUTOCHECKBOX,
                     12, 494, 340, 20, kIdCheckDisableAero, instance_);
-    checkAutostart_ = MakeControl(parent, WC_BUTTONW, L"Mit Windows starten", BS_AUTOCHECKBOX, 360,
+    checkAutostart_ = MakeControl(parent, WC_BUTTONW, L"Launch at login", BS_AUTOCHECKBOX, 360,
                                   446, 320, 20, kIdCheckAutostart, instance_);
-    checkCursor_ = MakeControl(parent, WC_BUTTONW, L"Mauszeiger mitbewegen", BS_AUTOCHECKBOX, 360,
+    checkCursor_ = MakeControl(parent, WC_BUTTONW, L"Move cursor with window", BS_AUTOCHECKBOX, 360,
                                470, 320, 20, kIdCheckCursor, instance_);
-    checkUpdates_ = MakeControl(parent, WC_BUTTONW, L"Täglich nach Updates suchen",
+    checkUpdates_ = MakeControl(parent, WC_BUTTONW, L"Check for updates daily",
                                 BS_AUTOCHECKBOX, 360, 494, 320, 20, kIdCheckUpdates, instance_);
-    // Ohne einkompilierte Update-Pruefung bleibt der Haken sichtbar, aber
-    // abgeblendet -- so ist erkennbar, dass die Fassung sie nicht hat.
+    // Without update checking compiled in the box stays visible but disabled,
+    // so it is obvious that this build does not have it.
     EnableWindow(checkUpdates_, Updater::IsSupported());
 
-    MakeControl(parent, WC_BUTTONW, L"Importieren…", BS_PUSHBUTTON, 12, 534, 120, 26, kIdImport,
+    MakeControl(parent, WC_BUTTONW, L"Import…", BS_PUSHBUTTON, 12, 534, 120, 26, kIdImport,
                 instance_);
-    MakeControl(parent, WC_BUTTONW, L"Exportieren…", BS_PUSHBUTTON, 140, 534, 120, 26, kIdExport,
+    MakeControl(parent, WC_BUTTONW, L"Export…", BS_PUSHBUTTON, 140, 534, 120, 26, kIdExport,
                 instance_);
-    MakeControl(parent, WC_BUTTONW, L"Speichern", BS_DEFPUSHBUTTON, 472, 534, 100, 26, kIdSave,
+    MakeControl(parent, WC_BUTTONW, L"Save", BS_DEFPUSHBUTTON, 472, 534, 100, 26, kIdSave,
                 instance_);
-    MakeControl(parent, WC_BUTTONW, L"Abbrechen", BS_PUSHBUTTON, 580, 534, 100, 26, kIdCancel,
+    MakeControl(parent, WC_BUTTONW, L"Cancel", BS_PUSHBUTTON, 580, 534, 100, 26, kIdCancel,
                 instance_);
 }
 
@@ -326,8 +326,8 @@ void SettingsWindow::ApplyRecordedShortcut() {
 
     const Action action = AllActions()[static_cast<size_t>(row)];
 
-    // Belegt die Kombination schon eine andere Aktion, wird sie dort entfernt --
-    // zwei Aktionen auf derselben Taste koennte Windows ohnehin nicht trennen.
+    // If the combination is already bound to another action, it is removed
+    // there -- Windows could not tell two actions on one key apart anyway.
     std::vector<int> changed{row};
     for (auto it = config_.shortcuts.begin(); it != config_.shortcuts.end();) {
         if (it->second == recorded_ && it->first != action) {
@@ -385,7 +385,7 @@ void SettingsWindow::ImportFromFile() {
     std::string error;
     std::vector<std::string> warnings;
     if (!Config::LoadFromFile(Narrow(path), imported, error, &warnings)) {
-        MessageBoxW(hwnd_, Widen(error).c_str(), L"Import fehlgeschlagen", MB_ICONERROR | MB_OK);
+        MessageBoxW(hwnd_, Widen(error).c_str(), L"Import failed", MB_ICONERROR | MB_OK);
         return;
     }
     config_ = imported;
@@ -393,9 +393,9 @@ void SettingsWindow::ImportFromFile() {
     FillList();
 
     if (!warnings.empty()) {
-        std::string text = "Übersprungen:\n";
+        std::string text = "Skipped:\n";
         for (const auto& w : warnings) text += "• " + w + "\n";
-        MessageBoxW(hwnd_, Widen(text).c_str(), L"Import mit Hinweisen", MB_ICONWARNING | MB_OK);
+        MessageBoxW(hwnd_, Widen(text).c_str(), L"Import with warnings", MB_ICONWARNING | MB_OK);
     }
 }
 
@@ -406,7 +406,7 @@ void SettingsWindow::ExportToFile() {
     ReadControlsIntoConfig();
     std::string error;
     if (!config_.SaveToFile(Narrow(path), error)) {
-        MessageBoxW(hwnd_, Widen(error).c_str(), L"Export fehlgeschlagen", MB_ICONERROR | MB_OK);
+        MessageBoxW(hwnd_, Widen(error).c_str(), L"Export failed", MB_ICONERROR | MB_OK);
     }
 }
 

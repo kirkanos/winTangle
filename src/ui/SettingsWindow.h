@@ -7,20 +7,20 @@
 
 namespace wintangle {
 
-// Einstellungsfenster: Tastenbelegung, Abstaende, Schalter, Import/Export.
+// Settings window: key bindings, gaps, switches, import and export.
 //
-// Bewusst von Hand aufgebaut statt als Dialogressource -- die Liste der
-// Aktionen kommt aus dem Katalog, eine feste Ressourcendatei muesste bei jeder
-// neuen Aktion nachgezogen werden.
+// Deliberately built by hand rather than as a dialog resource -- the list of
+// actions comes from the catalogue, and a fixed resource file would have to be
+// updated for every new action.
 class SettingsWindow {
 public:
-    // Wird beim Speichern aufgerufen. Die App uebernimmt die Konfiguration,
-    // registriert die Hotkeys neu und schreibt die Datei.
+    // Called on save. The app takes over the configuration, re-registers the
+    // hotkeys and writes the file.
     using SaveFn = std::function<void(const Config&)>;
 
     SettingsWindow(HINSTANCE instance, const Config& config, SaveFn onSave);
 
-    // Zeigt das Fenster oder holt ein bereits offenes nach vorn.
+    // Shows the window, or brings an already open one to the front.
     void Show();
     void UpdateConfig(const Config& config);
 
@@ -44,7 +44,7 @@ private:
     int SelectedRow() const;
 
     HINSTANCE instance_;
-    Config config_;      // Arbeitskopie, erst beim Speichern uebernommen
+    Config config_;      // working copy, only adopted on save
     SaveFn onSave_;
 
     HWND hwnd_ = nullptr;

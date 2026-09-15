@@ -10,8 +10,8 @@ void Note(CleanupReport& report, bool ok, const wchar_t* what) {
     (ok ? report.removed : report.failed).emplace_back(what);
 }
 
-// Loescht einen Registry-Baum. "Gab es nicht" zaehlt als Erfolg -- fuer den
-// Benutzer ist das Ergebnis dasselbe.
+// Deletes a registry tree. "It was not there" counts as success -- from the
+// user's point of view the result is the same.
 bool DeleteTree(HKEY root, const wchar_t* subkey) {
     const LSTATUS status = RegDeleteTreeW(root, subkey);
     return status == ERROR_SUCCESS || status == ERROR_FILE_NOT_FOUND;
@@ -25,8 +25,8 @@ bool DeleteValue(HKEY root, const wchar_t* subkey, const wchar_t* name) {
     return status == ERROR_SUCCESS || status == ERROR_FILE_NOT_FOUND;
 }
 
-// Bewusst nur die Dateien loeschen, die WinTangle selbst anlegt, statt den
-// Ordner rekursiv zu leeren: was sonst noch darin liegt, gehoert uns nicht.
+// Deliberately delete only the files WinTangle creates itself instead of
+// emptying the folder recursively: whatever else is in there is not ours.
 bool RemoveConfigDirectory() {
     const std::wstring dir = AppDataDir();
     if (dir.empty()) return false;
@@ -37,12 +37,12 @@ bool RemoveConfigDirectory() {
         if (!DeleteFileW(path.c_str()) && GetLastError() != ERROR_FILE_NOT_FOUND) return false;
     }
 
-    // Schlaegt fehl, wenn der Ordner nicht leer ist -- dann bleibt er stehen,
-    // und das ist richtig so.
+    // Fails when the folder is not empty -- in which case it stays, and that
+    // is the right outcome.
     return RemoveDirectoryW(dir.c_str()) != 0 || GetLastError() == ERROR_FILE_NOT_FOUND;
 }
 
-// Windows-eigenes Andocken wieder einschalten.
+// Switch Windows' own snapping back on.
 bool RestoreWindowsSnap() {
     const UINT_PTR enabled = TRUE;
     return SystemParametersInfoW(SPI_SETWINARRANGING, 0, reinterpret_cast<void*>(enabled),
@@ -54,15 +54,15 @@ bool RestoreWindowsSnap() {
 CleanupReport RemoveAllTraces() {
     CleanupReport report;
 
-    Note(report, RemoveConfigDirectory(), L"Einstellungen (%APPDATA%\\WinTangle)");
+    Note(report, RemoveConfigDirectory(), L"Settings (%APPDATA%\\WinTangle)");
     Note(report,
          DeleteValue(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",
                      L"WinTangle"),
-         L"Autostart-Eintrag");
+         L"Autostart entry");
     Note(report, DeleteTree(HKEY_CURRENT_USER, L"Software\\Classes\\wintangle"),
-         L"URL-Protokoll wintangle://");
-    Note(report, DeleteTree(HKEY_CURRENT_USER, L"Software\\WinTangle"), L"Update-Zustand");
-    Note(report, RestoreWindowsSnap(), L"Windows-eigenes Andocken wieder eingeschaltet");
+         L"URL protocol wintangle://");
+    Note(report, DeleteTree(HKEY_CURRENT_USER, L"Software\\WinTangle"), L"Update state");
+    Note(report, RestoreWindowsSnap(), L"Windows' own snapping switched back on");
 
     return report;
 }
@@ -70,11 +70,11 @@ CleanupReport RemoveAllTraces() {
 std::wstring FormatCleanupReport(const CleanupReport& report) {
     std::wstring text;
     if (!report.removed.empty()) {
-        text += L"Entfernt:\n";
+        text += L"Removed:\n";
         for (const auto& item : report.removed) text += L"  • " + item + L"\n";
     }
     if (!report.failed.empty()) {
-        text += L"\nNicht entfernt (läuft WinTangle noch?):\n";
+        text += L"\nNot removed (is WinTangle still running?):\n";
         for (const auto& item : report.failed) text += L"  • " + item + L"\n";
     }
     return text;

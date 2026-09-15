@@ -1,10 +1,10 @@
-﻿; Inno-Setup-Skript fuer WinTangle.
+﻿; Inno Setup script for WinTangle.
 ;
-; Bewusst eine Installation pro Benutzer (PrivilegesRequired=lowest): das
-; Programm braucht keine erhoehten Rechte, und ohne UAC-Abfrage kann auch der
-; WinSparkle-Updater das Setup unbeaufsichtigt ausfuehren.
+; Deliberately a per-user installation (PrivilegesRequired=lowest): the program
+; needs no elevated rights, and without a UAC prompt the WinSparkle updater can
+; run the setup unattended.
 ;
-; Die Version kommt ueber /DAppVersion=... aus dem Release-Workflow.
+; The version arrives as /DAppVersion=... from the release workflow.
 
 #ifndef AppVersion
   #define AppVersion "0.0.0"
@@ -46,16 +46,22 @@ SolidCompression=yes
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 
-; GPL: die Lizenz wird im Setup angezeigt.
+; GPL: the licence is shown during setup.
 LicenseFile=..\LICENSE
 
-; Verhindert, dass ein Update ueber eine laufende Instanz installiert wird.
+; Prevents an update from being installed over a running instance.
 CloseApplications=yes
 RestartApplications=no
 
 [Languages]
-Name: "deutsch"; MessagesFile: "compiler:Languages\German.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "german"; MessagesFile: "compiler:Languages\German.isl"
+
+; The wizard's own text comes from the language files above; only this script's
+; own prompt needs translating by hand.
+[CustomMessages]
+english.RemoveSettingsPrompt=Remove WinTangle's personal data as well?%n%n• settings and key bindings%n• stored update state%n%nWindows' own snapping will be switched back on if WinTangle turned it off.%n%nChoosing No keeps your settings for a later installation.
+german.RemoveSettingsPrompt=Sollen auch die persönlichen Daten von WinTangle entfernt werden?%n%n• Einstellungen und Tastenbelegung%n• gespeicherter Update-Zustand%n%nDas Windows-eigene Andocken wird dabei wieder eingeschaltet, falls WinTangle es abgeschaltet hat.%n%nBei Nein bleiben die Einstellungen für eine spätere Installation erhalten.
 
 [Tasks]
 Name: "autostart"; Description: "{cm:AutoStartProgram,{#AppName}}"; GroupDescription: "{cm:AdditionalIcons}"
@@ -63,7 +69,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "{#SourceDir}\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
-; WinSparkle wird nur mitgeliefert, wenn mit Update-Pruefung gebaut wurde.
+; WinSparkle only ships when the build included update checking.
 Source: "{#SourceDir}\WinSparkle.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
@@ -74,13 +80,13 @@ Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
 
 [Registry]
-; Autostart ueber denselben Schluessel, den das Programm selbst verwendet --
-; der Schalter im Tray-Menue und dieser Haken meinen dieselbe Einstellung.
+; Autostart through the same key the program itself uses -- the tray menu
+; switch and this checkbox mean the same setting.
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; \
     ValueType: string; ValueName: "WinTangle"; ValueData: """{app}\{#AppExe}"""; \
     Flags: uninsdeletevalue; Tasks: autostart
 
-; URL-Protokoll wintangle://, damit es auch ohne vorherigen Programmstart geht.
+; URL protocol wintangle://, so it works before the program has ever run.
 Root: HKCU; Subkey: "Software\Classes\wintangle"; ValueType: string; \
     ValueData: "URL:WinTangle Protocol"; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\Classes\wintangle"; ValueType: string; \
@@ -93,10 +99,10 @@ Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; \
     Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
-; Wenn der Benutzer es will, raeumt das Programm selbst auf. Die Liste dessen,
-; was zu entfernen ist, steht damit nur an einer Stelle (src/app/Cleanup.cpp)
-; und nicht zusaetzlich hier im Skript.
-; Laeuft vor dem Loeschen der Dateien, solange die Exe also noch da ist.
+; If the user asks for it, the program cleans up after itself. The list of what
+; to remove therefore lives in exactly one place (src/app/Cleanup.cpp) and is
+; not duplicated in this script.
+; Runs before the files are deleted, while the executable is still there.
 Filename: "{app}\{#AppExe}"; Parameters: "--cleanup --silent"; \
     Flags: runhidden waituntilterminated; RunOnceId: "wintangle-cleanup"; \
     Check: ShouldRemoveSettings
@@ -108,19 +114,13 @@ Type: dirifempty; Name: "{userappdata}\WinTangle"
 var
   RemoveSettings: Boolean;
 
-// Beim Deinstallieren fragen, ob auch die persoenlichen Daten weg sollen.
-// Vorbelegt ist "Nein": wer nur auf eine neue Fassung wechselt, soll seine
-// Tastenbelegung nicht verlieren. Bei stiller Deinstallation greift diese
-// Vorbelegung ebenfalls.
+// Ask during uninstall whether the personal data should go as well. The
+// default is "No": somebody merely moving to a new version should not lose
+// their key bindings. A silent uninstall takes that default too.
 function InitializeUninstall(): Boolean;
 begin
   RemoveSettings := SuppressibleMsgBox(
-    'Sollen auch die persönlichen Daten von WinTangle entfernt werden?'#13#10#13#10 +
-    '• Einstellungen und Tastenbelegung'#13#10 +
-    '• gespeicherter Update-Zustand'#13#10#13#10 +
-    'Das Windows-eigene Andocken wird dabei wieder eingeschaltet, falls ' +
-    'WinTangle es abgeschaltet hat.'#13#10#13#10 +
-    'Bei "Nein" bleiben die Einstellungen für eine spätere Installation erhalten.',
+    ExpandConstant('{cm:RemoveSettingsPrompt}'),
     mbConfirmation, MB_YESNO, IDNO) = IDYES;
   Result := True;
 end;
@@ -130,10 +130,10 @@ begin
   Result := RemoveSettings;
 end;
 
-// Autostart und URL-Protokoll gehoeren in jedem Fall weg -- auch dann, wenn
-// die Eintraege nicht vom Setup stammen, sondern das Programm sie selbst
-// geschrieben hat. Genau das passiert, wenn jemand den Autostart erst
-// nachtraeglich im Tray-Menue einschaltet.
+// Autostart and the URL protocol go in any case -- including when those
+// entries did not come from the setup but were written by the program itself.
+// That is exactly what happens when somebody enables autostart later from the
+// tray menu.
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep = usPostUninstall then

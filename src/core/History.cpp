@@ -15,7 +15,7 @@ int History::RepeatCountFor(WindowId id, Action action, const Rect& currentRect)
     if (it == entries_.end()) return 0;
     const Entry& e = it->second;
     if (e.lastAction != action) return 0;
-    // Von außen bewegt -> Kette gilt als unterbrochen.
+    // Moved from the outside -> the chain counts as broken.
     if (!NearlyEqual(e.appliedRect, currentRect)) return 0;
     return e.repeat;
 }
@@ -32,8 +32,8 @@ void History::Record(WindowId id, Action action, const Rect& before, const Rect&
     const bool continues = e.lastAction == action && NearlyEqual(e.appliedRect, before);
     e.repeat = continues ? e.repeat + 1 : 1;
 
-    // Der Restore-Rahmen bleibt der allererste; nach einem Restore ist er
-    // verbraucht und wird beim nächsten Eingriff neu gesetzt.
+    // The restore frame stays the very first one; after a restore it is used
+    // up and gets set again on the next intervention.
     if (!e.hasRestore && action != Action::Restore) {
         e.restoreRect = before;
         e.hasRestore = true;

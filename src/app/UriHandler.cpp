@@ -6,7 +6,7 @@
 namespace wintangle {
 namespace {
 
-// Ein Pipe-Name pro Benutzersitzung reicht: WinTangle laeuft pro Benutzer.
+// One pipe name per session is enough: WinTangle runs per user.
 constexpr wchar_t kPipeName[] = L"\\\\.\\pipe\\WinTangle.v1";
 constexpr DWORD kMaxMessage = 2048;
 
@@ -52,7 +52,7 @@ bool UriServer::Start(HWND window) {
 void UriServer::Stop() {
     if (stopEvent_) SetEvent(stopEvent_);
     if (thread_) {
-        // Die Pipe blockiert in ConnectNamedPipe; ein Dummy-Connect loest sie.
+        // The pipe blocks in ConnectNamedPipe; a dummy connect releases it.
         HANDLE dummy = CreateFileW(kPipeName, GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr);
         if (dummy != INVALID_HANDLE_VALUE) CloseHandle(dummy);
         WaitForSingleObject(thread_, 2000);
@@ -88,7 +88,7 @@ void UriServer::ThreadMain() {
                 EnterCriticalSection(&lock_);
                 pending_.emplace_back(buffer, read);
                 LeaveCriticalSection(&lock_);
-                // Die Verarbeitung gehoert in den UI-Thread, hier nur wecken.
+                // Handling belongs on the UI thread; just wake it up here.
                 PostMessageW(window_, kMsgUriCommand, 0, 0);
             }
         }
@@ -110,7 +110,7 @@ bool UriServer::PopPending(std::string& uri) {
 }
 
 bool SendUriToRunningInstance(const std::string& uri) {
-    // Kurz warten, falls die erste Instanz gerade erst hochkommt.
+    // Wait briefly in case the first instance is only just coming up.
     if (!WaitNamedPipeW(kPipeName, 1000)) return false;
 
     HANDLE pipe = CreateFileW(kPipeName, GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr);

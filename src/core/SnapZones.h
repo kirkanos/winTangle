@@ -8,21 +8,21 @@
 namespace wintangle {
 
 struct SnapZoneConfig {
-    // Wie nah der Mauszeiger an den Bildschirmrand muss, in Pixeln bei 96 dpi.
+    // How close the cursor has to get to the screen edge, in pixels at 96 dpi.
     int edgeMargin = 16;
-    // Anteil der Bildschirmhoehe, der an den Seitenraendern als Ecke zaehlt.
+    // Share of the screen height that counts as a corner on the side edges.
     double cornerFraction = 0.25;
 };
 
-// Welche Aktion loest ein Loslassen an dieser Mausposition aus?
+// Which action does releasing the mouse at this position trigger?
 //
-// Aufteilung wie bei Rectangle:
-//   linker/rechter Rand      -> Haelfte, in den Ecken das jeweilige Viertel
-//   oberer Rand              -> maximieren
-//   unterer Rand             -> Drittel, je nach waagerechter Position
+// The split follows Rectangle:
+//   left/right edge  -> half, the matching quarter in the corners
+//   top edge         -> maximize
+//   bottom edge      -> thirds, depending on the horizontal position
 //
-// `bounds` ist der gesamte Monitor, nicht die Arbeitsflaeche: der Mauszeiger
-// erreicht beim Ziehen auch den Bereich hinter der Taskleiste.
+// `bounds` is the whole display, not the work area: while dragging, the cursor
+// also reaches the strip behind the taskbar.
 std::optional<Action> SnapZoneAt(int x, int y, const Rect& bounds, const SnapZoneConfig& cfg = {});
 
 }  // namespace wintangle

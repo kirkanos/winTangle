@@ -2,9 +2,9 @@
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <assemblyIdentity type="win32" name="WinTangle" version="0.1.0.0" processorArchitecture="*"/>
 
-  <!-- asInvoker: WinTangle braucht normalerweise keine erhoehten Rechte.
-       Fenster erhoehter Prozesse lassen sich damit nicht anordnen (UIPI);
-       wer das braucht, startet WinTangle bewusst als Administrator. -->
+  <!-- asInvoker: WinTangle normally needs no elevated rights. Windows of
+       elevated processes cannot be arranged that way (UIPI); anyone who needs
+       that starts WinTangle as administrator deliberately. -->
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
     <security>
       <requestedPrivileges>
@@ -13,8 +13,9 @@
     </security>
   </trustInfo>
 
-  <!-- Ohne PerMonitorV2 liefert Win32 auf Mixed-DPI-Setups virtualisierte,
-       also falsche Koordinaten. Das ist die wichtigste Zeile der Datei. -->
+  <!-- Without PerMonitorV2, Win32 hands back virtualised - that is, wrong -
+       coordinates on mixed-DPI setups. This is the most important line in the
+       file. -->
   <application xmlns="urn:schemas-microsoft-com:asm.v3">
     <windowsSettings>
       <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
@@ -25,12 +26,12 @@
 
   <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
     <application>
-      <!-- Windows 10 und 11 -->
+      <!-- Windows 10 and 11 -->
       <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/>
     </application>
   </compatibility>
 
-  <!-- Moderne Common Controls fuer den Einstellungsdialog. -->
+  <!-- Modern common controls for the settings window. -->
   <dependency>
     <dependentAssembly>
       <assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls"

@@ -10,25 +10,24 @@ namespace wintangle {
 
 // wintangle://execute-action?name=left-half
 //
-// Gegenstueck zu Rectangles rectangle://-Schema. Zwei Aufgaben:
-//   * Das Protokoll in der Registry anmelden (HKCU, keine Adminrechte).
-//   * Aufrufe an die bereits laufende Instanz weiterreichen -- Windows
-//     startet fuer jeden Protokoll-Aufruf einen neuen Prozess, der seine
-//     Kommandozeile per Named Pipe an die erste Instanz schickt und sich
-//     danach sofort beendet.
+// The counterpart to Rectangle's rectangle:// scheme. Two jobs:
+//   * Register the protocol in the registry (HKCU, no admin rights).
+//   * Hand calls over to the instance that is already running -- Windows
+//     starts a fresh process for every protocol invocation, which forwards
+//     its command line through a named pipe and then exits immediately.
 class UriServer {
 public:
-    // Wird im Thread der Nachrichtenschleife aufgerufen, nicht im Pipe-Thread.
+    // Called on the message loop thread, not on the pipe thread.
     using Handler = std::function<void(const std::string& uri)>;
 
     ~UriServer();
 
-    // Startet den Lauscher. `window` bekommt kMsgUriCommand gepostet, sobald
-    // ein Aufruf hereinkommt.
+    // Starts the listener. `window` gets kMsgUriCommand posted as soon as a
+    // call comes in.
     bool Start(HWND window);
     void Stop();
 
-    // Holt die naechste eingegangene URI ab (aus dem Nachrichten-Thread).
+    // Fetches the next URI that came in (from the message thread).
     bool PopPending(std::string& uri);
 
 private:
@@ -42,11 +41,10 @@ private:
     std::vector<std::string> pending_;
 };
 
-// Schickt eine URI an eine laufende Instanz. Gibt false zurueck, wenn keine
-// laeuft.
+// Sends a URI to a running instance. Returns false when none is running.
 bool SendUriToRunningInstance(const std::string& uri);
 
-// Registriert bzw. entfernt das Protokoll fuer den aktuellen Benutzer.
+// Registers or removes the protocol for the current user.
 bool RegisterUriScheme();
 bool UnregisterUriScheme();
 

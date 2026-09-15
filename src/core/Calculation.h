@@ -7,39 +7,40 @@
 
 namespace wintangle {
 
-// Alles, was eine Aktion zur Berechnung braucht. Bewusst ein reiner Wert-Typ:
-// Hotkey, Tray-Menü, wintangle://-URI und Drag-Snap füllen dieselbe Struktur.
+// Everything an action needs in order to be calculated. Deliberately a plain
+// value type: hotkey, tray menu, wintangle:// URI and drag-snap all fill in the
+// same structure.
 struct CalcInput {
     Action action = Action::LeftHalf;
-    Rect window;    // aktueller Fensterrahmen (schattenkorrigiert)
-    Rect workArea;  // Arbeitsfläche des Monitors, auf dem das Fenster liegt
+    Rect window;    // current window frame (shadow corrected)
+    Rect workArea;  // work area of the display the window sits on
     Gaps gaps;
 
-    // Anzahl der unmittelbar vorangegangenen identischen Ausführungen auf
-    // demselben Fenster. 0 = erste Ausführung.
+    // Number of immediately preceding identical invocations on the same
+    // window. 0 = first invocation.
     int repeat = 0;
     bool cycleSizes = true;
 
-    // Für Action::Restore.
+    // For Action::Restore.
     std::optional<Rect> restoreRect;
 
-    // Für Next-/PreviousDisplay: Arbeitsfläche des Zielmonitors.
+    // For Next/PreviousDisplay: work area of the target display.
     std::optional<Rect> targetArea;
 };
 
-// Berechnet die Zielposition. Gibt nullopt zurück, wenn die Aktion nichts zu
-// tun hat (z.B. Restore ohne Historie, Monitorwechsel bei nur einem Monitor)
-// oder wenn sie über den Multi-Window-Pfad läuft.
+// Calculates the target position. Returns nullopt when the action has nothing
+// to do (restore without history, display switch with only one display) or when
+// it runs through the multi-window path instead.
 std::optional<Rect> Calculate(const CalcInput& in);
 
-// Gibt den Bruchteil zurück, den eine Rasteraktion belegt, oder nullopt für
-// Aktionen, die nicht rasterbasiert sind (Center, Larger, Move, ...).
-// `repeat` steuert das Zyklusverhalten der Hälften-Aktionen.
+// Returns the fraction a grid action occupies, or nullopt for actions that are
+// not grid based (center, larger, move, ...). `repeat` drives the size cycling
+// of the half actions.
 std::optional<Fraction> FractionFor(Action a, int repeat, bool cycleSizes);
 
-// Überträgt ein Rect proportional von einer Arbeitsfläche auf eine andere.
-// Wird für den Monitorwechsel gebraucht, damit ein halbiertes Fenster auf dem
-// Zielmonitor wieder eine Hälfte ist statt pixelgleich zu bleiben.
+// Maps a rect proportionally from one work area onto another. Needed when
+// moving between displays, so a half-screen window stays a half on the target
+// display instead of keeping its pixel size.
 Rect MapRectToArea(const Rect& rect, const Rect& from, const Rect& to);
 
 }  // namespace wintangle

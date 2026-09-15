@@ -6,11 +6,11 @@ on:
   pull_request:
 
 jobs:
-  # Der Berechnungskern ist plattformfrei. Ihn zusaetzlich unter Linux zu
-  # bauen haelt diese Trennung ehrlich: zieht jemand versehentlich
-  # <windows.h> in den Kern, faellt es hier sofort auf.
+  # The calculation core is platform free. Building it on Linux as well keeps
+  # that separation honest: if anyone accidentally pulls <windows.h> into the
+  # core, it shows up here immediately.
   core:
-    name: Kern (Linux)
+    name: Core (Linux)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

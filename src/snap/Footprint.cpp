@@ -33,7 +33,7 @@ LRESULT CALLBACK Footprint::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             return 0;
         }
         case WM_ERASEBKGND:
-            return 1;  // flimmerfrei: alles passiert in WM_PAINT
+            return 1;  // flicker free: everything happens in WM_PAINT
         case WM_NCHITTEST:
             return HTTRANSPARENT;
         default:
@@ -46,8 +46,8 @@ void Footprint::Paint(HDC dc, const RECT& client) const {
     FillRect(dc, &client, fill);
     DeleteObject(fill);
 
-    // Rahmen deutlich sichtbar, damit die Vorschau auf hellem wie dunklem
-    // Hintergrund erkennbar bleibt.
+    // A clearly visible border, so the preview reads on light and dark
+    // backgrounds alike.
     HBRUSH border = CreateSolidBrush(kBorder);
     RECT frame = client;
     FrameRect(dc, &frame, border);
@@ -63,7 +63,7 @@ bool Footprint::Create(HINSTANCE instance) {
     wc.hInstance = instance;
     wc.lpszClassName = kClassName;
     wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-    RegisterClassExW(&wc);  // doppelte Registrierung ist unkritisch
+    RegisterClassExW(&wc);  // registering twice is harmless
 
     hwnd_ = CreateWindowExW(
         WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW,
@@ -76,7 +76,7 @@ bool Footprint::Create(HINSTANCE instance) {
 
 void Footprint::ShowAt(const Rect& frame) {
     if (!hwnd_ || frame.IsEmpty()) return;
-    if (visible_ && frame == current_) return;  // unnoetiges Neuzeichnen vermeiden
+    if (visible_ && frame == current_) return;  // avoid needless repainting
 
     current_ = frame;
     SetWindowPos(hwnd_, HWND_TOPMOST, frame.left, frame.top, frame.Width(), frame.Height(),

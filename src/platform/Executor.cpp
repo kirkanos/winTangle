@@ -9,10 +9,10 @@
 namespace wintangle {
 namespace {
 
-// Nach dem Setzen liest der Executor den tatsaechlichen Rahmen zurueck. Apps
-// mit Mindest- oder Rastergroesse (Terminals, einige Electron-Apps) landen
-// nicht exakt auf dem gewuenschten Wert; die Historie muss den echten Wert
-// kennen, sonst reisst die Zykluskette beim naechsten Tastendruck.
+// After applying, the executor reads the actual frame back. Apps with a
+// minimum or stepped size (terminals, some Electron apps) do not land exactly
+// on the requested value; the history has to know the real one, otherwise the
+// cycling chain tears on the next key press.
 Rect ApplyAndReadBack(WindowRef& w, const Rect& target, DWORD& error) {
     if (!w.SetFrame(target, &error)) return Rect{};
     return w.Frame();
@@ -84,23 +84,23 @@ ExecResult Executor::ExecuteMultiWindow(Action action, HWND reference) {
     if (action == Action::CascadeActiveApp) filter.processId = ProcessIdOf(reference);
 
     auto windows = ListWindows(filter);
-    // Ignorierte Apps bleiben auch beim Kacheln unangetastet.
+    // Ignored apps stay untouched when tiling as well.
     std::erase_if(windows, [&](const WindowRef& w) { return config_->IsIgnored(w.ExeName()); });
     if (windows.empty()) return ExecResult::NoTarget;
 
     const auto targets = LayoutWindows(action, windows.size(), monitor.work, config_->gaps);
     if (targets.empty()) return ExecResult::NothingToDo;
 
-    // Beim Staffeln soll das aktive Fenster oben liegen, also von hinten nach
-    // vorne platzieren.
+    // When cascading, the active window should end up on top, so place them
+    // back to front.
     const bool cascade = action == Action::CascadeAll || action == Action::CascadeActiveApp;
 
-    // Rahmen vor dem Eingriff merken -- daran haengt spaeter "Wiederherstellen".
+    // Remember the frames before the intervention -- "restore" hangs off these.
     std::vector<Rect> before(windows.size());
     for (size_t i = 0; i < windows.size(); ++i) before[i] = windows[i].Frame();
 
-    // Maximierte Fenster muessen vor dem Batch wiederhergestellt werden;
-    // ShowWindow laesst sich nicht in DeferWindowPos buendeln.
+    // Maximized windows have to be restored before the batch; ShowWindow
+    // cannot be bundled into DeferWindowPos.
     for (auto& w : windows) w.EnsureRestored();
 
     HDWP batch = BeginDeferWindowPos(static_cast<int>(windows.size()));
@@ -114,8 +114,8 @@ ExecResult Executor::ExecuteMultiWindow(Action action, HWND reference) {
                                    SWP_NOACTIVATE | (cascade ? 0 : SWP_NOZORDER));
         }
         if (!batch) {
-            // Faellt der Batch aus (z.B. ein Fenster verschwindet mittendrin),
-            // wird einzeln weitergemacht statt alles abzubrechen.
+            // If the batch drops out (a window disappearing mid-flight, say),
+            // carry on one by one rather than abandoning everything.
             DWORD error = 0;
             windows[index].SetFrame(targets[index], &error);
         }

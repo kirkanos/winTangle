@@ -6,8 +6,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # ---------------------------------------------------------------------------
-# wintangle_core: die komplette Geometrie, plattformfrei.
-# Baut und testet auch auf macOS/Linux -- genau dafuer ist der Kern getrennt.
+# wintangle_core: the entire geometry, platform free.
+# Builds and tests on macOS and Linux too -- which is exactly why it is split
+# off from the Win32 layer.
 # ---------------------------------------------------------------------------
 add_library(wintangle_core STATIC
     src/core/Action.cpp
@@ -43,7 +44,7 @@ target_include_directories(wintangle_tests PRIVATE tests)
 add_test(NAME core COMMAND wintangle_tests)
 
 # ---------------------------------------------------------------------------
-# Die eigentliche App -- nur unter Windows.
+# The actual app -- Windows only.
 # ---------------------------------------------------------------------------
 if(WIN32)
     add_subdirectory(src/platform)

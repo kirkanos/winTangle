@@ -1,6 +1,6 @@
-// Sehr kleiner JSON-Leser/-Schreiber. Bewusst selbst geschrieben statt eine
-// Bibliothek einzubinden: WinTangle soll ohne Paketmanager und ohne Runtime-
-// Abhaengigkeit auskommen, und gebraucht wird nur ein flaches Konfigformat.
+// A very small JSON reader and writer. Deliberately hand written rather than
+// pulling in a library: WinTangle should work without a package manager and
+// without a runtime dependency, and all it needs is a flat config format.
 #pragma once
 
 #include <memory>
@@ -12,8 +12,8 @@ namespace wintangle::json {
 
 class Value;
 using Array = std::vector<Value>;
-// Objekte behalten die Einfuegereihenfolge, damit ein Speichern der Konfig
-// keine willkuerlich umsortierte Datei erzeugt (schlecht fuer Diffs).
+// Objects keep their insertion order, so saving the config does not produce an
+// arbitrarily reordered file (which would make diffs useless).
 using Object = std::vector<std::pair<std::string, Value>>;
 
 enum class Type { Null, Bool, Number, String, Array, Object };
@@ -48,8 +48,8 @@ public:
     const Array& AsArray() const;
     const Object& AsObject() const;
 
-    // Feldzugriff auf Objekte. Fehlt das Feld, kommt ein Null-Value zurueck --
-    // so lassen sich unvollstaendige Konfigdateien ohne Sonderfaelle lesen.
+    // Field access on objects. A missing field yields a null value, which
+    // makes incomplete config files readable without special cases.
     const Value& operator[](std::string_view key) const;
     bool Has(std::string_view key) const;
 
@@ -69,8 +69,8 @@ private:
     Object object_;
 };
 
-// Parst JSON. Bei einem Fehler wird false zurueckgegeben und `error` gefuellt
-// (Zeile/Spalte im Text), damit eine kaputte Konfigdatei benennbar ist.
+// Parses JSON. On failure it returns false and fills in `error` (line and
+// column), so a broken config file can be pointed at.
 bool Parse(std::string_view text, Value& out, std::string& error);
 
 }  // namespace wintangle::json

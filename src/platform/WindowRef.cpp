@@ -44,8 +44,8 @@ RECT WindowRef::ToWindowRect(const Rect& frame) const {
 
 void WindowRef::EnsureRestored() {
     if (IsMinimized() || IsMaximized()) {
-        // SW_RESTORE statt SW_SHOWNORMAL: das Fenster soll nicht nach vorn
-        // gerissen werden, nur aus dem maximierten Zustand heraus.
+        // SW_RESTORE rather than SW_SHOWNORMAL: the window should not be
+        // yanked to the front, only taken out of its maximized state.
         ShowWindow(hwnd_, SW_RESTORE);
     }
 }
@@ -64,8 +64,8 @@ bool WindowRef::SetFrame(const Rect& frame, DWORD* errorOut) {
 }
 
 bool WindowRef::IsCloaked() const {
-    // Von der Shell versteckte Fenster: UWP-Apps im Hintergrund und Fenster
-    // anderer virtueller Desktops. Die duerfen nicht mitgekachelt werden.
+    // Windows hidden by the shell: background UWP apps and windows on other
+    // virtual desktops. Those must not be tiled along.
     DWORD cloaked = 0;
     if (FAILED(DwmGetWindowAttribute(hwnd_, DWMWA_CLOAKED, &cloaked, sizeof(cloaked)))) return false;
     return cloaked != 0;
@@ -74,17 +74,17 @@ bool WindowRef::IsCloaked() const {
 bool WindowRef::IsManageable() const {
     if (!*this) return false;
     if (!IsWindowVisible(hwnd_)) return false;
-    if (GetAncestor(hwnd_, GA_ROOT) != hwnd_) return false;  // nur echte Top-Level-Fenster
+    if (GetAncestor(hwnd_, GA_ROOT) != hwnd_) return false;  // real top-level windows only
     if (IsCloaked()) return false;
 
     const LONG_PTR style = GetWindowLongPtrW(hwnd_, GWL_STYLE);
     const LONG_PTR exStyle = GetWindowLongPtrW(hwnd_, GWL_EXSTYLE);
     if (exStyle & WS_EX_TOOLWINDOW) return false;
     if (style & WS_CHILD) return false;
-    // Ohne Rahmen laesst sich nichts sinnvoll anordnen (Splash Screens, Popups).
+    // Without a frame there is nothing sensible to arrange (splash screens, popups).
     if (!(style & WS_CAPTION) && !(style & WS_THICKFRAME)) return false;
 
-    // Desktop und Taskleiste.
+    // Desktop and taskbar.
     wchar_t cls[64]{};
     GetClassNameW(hwnd_, cls, static_cast<int>(std::size(cls)));
     const std::wstring className(cls);
@@ -100,8 +100,8 @@ std::string WindowRef::ExeName() const {
     GetWindowThreadProcessId(hwnd_, &pid);
     if (pid == 0) return {};
 
-    // PROCESS_QUERY_LIMITED_INFORMATION reicht und funktioniert auch fuer
-    // Prozesse, an die wir sonst nicht herankommen.
+    // PROCESS_QUERY_LIMITED_INFORMATION is enough and also works for processes
+    // we could not otherwise open.
     HANDLE proc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
     if (!proc) return {};
 

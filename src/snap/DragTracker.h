@@ -9,18 +9,18 @@
 
 namespace wintangle {
 
-// Erkennt das Ziehen eines Fensters an einen Bildschirmrand und zeigt die
-// Zielposition an.
+// Detects a window being dragged to a screen edge and shows the resulting
+// position.
 //
-// Umgesetzt mit SetWinEventHook(EVENT_SYSTEM_MOVESIZESTART/END) im Modus
-// WINEVENT_OUTOFCONTEXT -- damit laeuft alles im eigenen Prozess, ohne eine
-// DLL in fremde Prozesse zu injizieren. Waehrend des Ziehens wird die
-// Mausposition per Timer abgefragt; ein WH_MOUSE_LL-Hook waere genauer, aber
-// jeder Mausbewegung des Systems durch unseren Prozess zu schicken ist den
-// Unterschied nicht wert.
+// Built on SetWinEventHook(EVENT_SYSTEM_MOVESIZESTART/END) in
+// WINEVENT_OUTOFCONTEXT mode, so everything runs inside our own process
+// without injecting a DLL into foreign ones. While dragging, the cursor
+// position is polled on a timer; a WH_MOUSE_LL hook would be more precise, but
+// routing every mouse movement on the system through our process is not worth
+// the difference.
 class DragTracker {
 public:
-    // Wird beim Loslassen aufgerufen, wenn der Zeiger in einer Snap-Zone war.
+    // Called on release when the cursor was inside a snap zone.
     using ApplyFn = std::function<void(HWND hwnd, Action action, const Rect& frame)>;
 
     DragTracker(HWND host, HINSTANCE instance, const Config& config, ApplyFn apply);
@@ -34,7 +34,7 @@ public:
 
     void SetConfig(const Config& config) { config_ = &config; }
 
-    // Aus WM_TIMER der Host-Fensterprozedur.
+    // From the host window procedure's WM_TIMER.
     void OnTimer(UINT_PTR timerId);
 
     static constexpr UINT_PTR kTimerId = 0x5754;  // "WT"

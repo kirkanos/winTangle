@@ -8,7 +8,7 @@ namespace {
 constexpr double kThird = 1.0 / 3.0;
 constexpr double kTwoThirds = 2.0 / 3.0;
 
-// Zyklus bei wiederholtem Druck derselben Hälften-Aktion: 1/2 -> 2/3 -> 1/3.
+// Cycle when the same half action is pressed repeatedly: 1/2 -> 2/3 -> 1/3.
 constexpr std::array<double, 3> kSizeCycle{0.5, kTwoThirds, kThird};
 
 double CycleSize(int repeat, bool cycleSizes) {
@@ -16,9 +16,9 @@ double CycleSize(int repeat, bool cycleSizes) {
     return kSizeCycle[static_cast<size_t>(repeat) % kSizeCycle.size()];
 }
 
-// Verkleinert/vergrößert um einen Schritt, behält den Mittelpunkt und bleibt
-// in der Arbeitsfläche. Schrittweite ist ein Zwölftel der Arbeitsfläche, damit
-// sich das Verhalten auf jedem Monitor gleich anfühlt.
+// Grows or shrinks by one step, keeps the centre and stays inside the work
+// area. The step is one twelfth of the work area so the behaviour feels the
+// same on every display.
 Rect Resize(const Rect& window, const Rect& area, int direction) {
     const int stepX = area.Width() / 12;
     const int stepY = area.Height() / 12;
@@ -28,7 +28,7 @@ Rect Resize(const Rect& window, const Rect& area, int direction) {
     int w = window.Width() + direction * stepX;
     int h = window.Height() + direction * stepY;
 
-    // Untergrenze, damit "Kleiner" ein Fenster nicht unbedienbar macht.
+    // Lower bound, so that "smaller" cannot render a window unusable.
     const int minW = std::max(240, area.Width() / 8);
     const int minH = std::max(160, area.Height() / 8);
     w = std::clamp(w, minW, area.Width());
@@ -44,13 +44,13 @@ Rect CenterIn(const Rect& window, const Rect& area) {
         .ClampedInto(area);
 }
 
-// Wie Rectangles "center prominently": mittig, aber mit mehr Luft unten als
-// oben, und mindestens auf eine gut sichtbare Größe gebracht.
+// Like Rectangle's "center prominently": centred, but with more room below
+// than above, and grown to a clearly visible size.
 Rect CenterProminentlyIn(const Rect& window, const Rect& area) {
     const int w = std::max(window.Width(), static_cast<int>(area.Width() * 0.78));
     const int h = std::max(window.Height(), static_cast<int>(area.Height() * 0.78));
     const int x = area.left + (area.Width() - w) / 2;
-    const int y = area.top + (area.Height() - h) / 3;  // Drittel statt Hälfte
+    const int y = area.top + (area.Height() - h) / 3;  // a third, not a half
     return Rect::FromXYWH(x, y, std::min(w, area.Width()), std::min(h, area.Height()))
         .ClampedInto(area);
 }
@@ -61,7 +61,7 @@ Rect MoveBy(const Rect& window, const Rect& area, int dx, int dy) {
     return window.Offset(dx * stepX, dy * stepY).ClampedInto(area);
 }
 
-// Spiegelt horizontal an der Mittelachse der Arbeitsfläche.
+// Mirrors horizontally around the centre line of the work area.
 Rect Reverse(const Rect& window, const Rect& area) {
     const int left = area.left + (area.right - window.right);
     return Rect::FromXYWH(left, window.top, window.Width(), window.Height()).ClampedInto(area);
@@ -73,7 +73,7 @@ std::optional<Fraction> FractionFor(Action a, int repeat, bool cycleSizes) {
     const double c = CycleSize(repeat, cycleSizes);
 
     switch (a) {
-        // Hälften zyklieren bei Wiederholung.
+        // Halves cycle on repeated presses.
         case Action::LeftHalf:   return Fraction{0.0, 0.0, c, 1.0};
         case Action::RightHalf:  return Fraction{1.0 - c, 0.0, c, 1.0};
         case Action::TopHalf:    return Fraction{0.0, 0.0, 1.0, c};
@@ -140,14 +140,14 @@ std::optional<Rect> Calculate(const CalcInput& in) {
     if (IsMultiWindowAction(in.action)) return std::nullopt;
     if (in.workArea.IsEmpty()) return std::nullopt;
 
-    // Rasterbasierte Aktionen: Bruchteil anwenden, dann Abstände.
+    // Grid based actions: apply the fraction, then the gaps.
     if (const auto f = FractionFor(in.action, in.repeat, in.cycleSizes)) {
         const Rect target = ApplyFraction(in.workArea, *f);
         return ApplyGaps(target, in.workArea, in.gaps);
     }
 
-    // Abstände gelten auch für die kantenbündigen Sonderfälle, deshalb wird die
-    // Arbeitsfläche dafür vorab um den Außenabstand verkleinert.
+    // The gaps also apply to the edge-aligned special cases, so the work area
+    // is shrunk by the outer gap up front.
     const Rect area = in.gaps.outer > 0 ? in.workArea.Inset(in.gaps.outer, in.gaps.outer)
                                         : in.workArea;
 

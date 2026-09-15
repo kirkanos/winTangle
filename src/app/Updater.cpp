@@ -10,15 +10,15 @@ namespace wintangle {
 namespace {
 
 #if defined(WINTANGLE_WITH_WINSPARKLE)
-// Adresse des Appcast-Feeds. Der Umweg ueber "latest" macht die URL stabil.
+// Address of the appcast feed. Going through "latest" keeps the URL stable.
 constexpr char kAppcastUrl[] =
     "https://github.com/kirkanos/winTangle/releases/latest/download/appcast.xml";
 
-// WinSparkle merkt sich Zeitpunkt der letzten Pruefung und uebersprungene
-// Versionen unter diesem Schluessel.
+// WinSparkle remembers the time of the last check and any skipped versions
+// under this key.
 constexpr char kRegistryPath[] = "Software\\WinTangle\\Updates";
 
-// Einmal taeglich reicht fuer ein Werkzeug dieser Groesse.
+// Once a day is plenty for a tool of this size.
 constexpr int kCheckIntervalSeconds = 24 * 60 * 60;
 #endif
 
@@ -39,7 +39,7 @@ void Updater::Initialize([[maybe_unused]] const std::wstring& version,
 #if defined(WINTANGLE_WITH_WINSPARKLE)
     if (initialized_) return;
 
-    // Alle set_*-Aufrufe muessen vor win_sparkle_init() passieren.
+    // Every set_* call has to happen before win_sparkle_init().
     win_sparkle_set_appcast_url(kAppcastUrl);
     win_sparkle_set_registry_path(kRegistryPath);
     win_sparkle_set_app_details(L"WinTangle", L"WinTangle", version.c_str());
@@ -64,8 +64,8 @@ void Updater::CheckWithUi() {
     win_sparkle_check_update_with_ui();
 #else
     MessageBoxW(nullptr,
-                L"Diese Fassung wurde ohne Update-Prüfung gebaut.\n"
-                L"Neue Versionen gibt es unter:\n"
+                L"This build was made without update checking.\n"
+                L"New versions are available at:\n"
                 L"https://github.com/kirkanos/winTangle/releases",
                 L"WinTangle", MB_ICONINFORMATION | MB_OK);
 #endif

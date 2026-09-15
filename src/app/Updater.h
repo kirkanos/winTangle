@@ -4,18 +4,18 @@
 
 namespace wintangle {
 
-// Update-Pruefung ueber WinSparkle -- das Windows-Gegenstueck zu Sparkle, das
-// Rectangle benutzt. WinSparkle laedt eine Appcast-XML, vergleicht die
-// Version, zeigt die Aenderungen an und startet den Installer.
+// Update checking through WinSparkle -- the Windows counterpart to Sparkle,
+// which Rectangle uses. WinSparkle fetches an appcast XML, compares versions,
+// shows the changes and launches the installer.
 //
-// Die Appcast haengt als Asset an jedem GitHub-Release. Die Feed-Adresse zeigt
-// bewusst auf ".../releases/latest/download/appcast.xml": GitHub leitet das
-// immer auf das jeweils neueste Release um, die URL bleibt also fuer alle Zeit
-// gleich und muss nie mitgepflegt werden.
+// The appcast is attached as an asset to every GitHub release. The feed URL
+// deliberately points at ".../releases/latest/download/appcast.xml": GitHub
+// always redirects that to the newest release, so the URL stays the same
+// forever and never has to be maintained.
 //
-// Ist WinSparkle nicht einkompiliert (mingw-Cross-Build, bewusst abgeschaltet),
-// sind alle Aufrufe wirkungslos und IsSupported() meldet false. Der Aufrufer
-// braucht dafuer keine Sonderfaelle.
+// When WinSparkle is not compiled in (the mingw cross build, or deliberately
+// disabled), every call is a no-op and IsSupported() reports false. Callers
+// need no special cases for that.
 class Updater {
 public:
     ~Updater();
@@ -24,16 +24,15 @@ public:
     Updater& operator=(const Updater&) = delete;
     Updater() = default;
 
-    // Wurde WinSparkle mit eingebaut?
+    // Was WinSparkle built in?
     static bool IsSupported();
 
-    // Muss aus dem Thread der Nachrichtenschleife aufgerufen werden.
-    // `version` ist die eigene Version ("0.1.0") und wird mit der Appcast
-    // verglichen.
+    // Must be called on the message loop thread. `version` is our own version
+    // ("0.1.0") and is what the appcast is compared against.
     void Initialize(const std::wstring& version, bool automaticChecks);
     void Shutdown();
 
-    // Manuelle Pruefung mit Fenster -- meldet auch, wenn alles aktuell ist.
+    // Manual check with a window -- also reports when everything is current.
     void CheckWithUi();
 
     void SetAutomaticChecks(bool enabled);
