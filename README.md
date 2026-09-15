@@ -120,6 +120,11 @@ window can pin it, as can the config file:
 `"auto"`, `"en"` or `"de"`; regional tags such as `"de-AT"` resolve to their
 base language.
 
+Picking a language in the settings window relabels the window on the spot, so
+the choice is visible before saving. Cancelling puts the previous language
+back — otherwise the tray menu would end up speaking a language the user just
+backed out of.
+
 Adding a language means adding one column to the table in
 `src/core/Strings.cpp` and one German-style label column in
 `src/core/Action.cpp`. The test suite then insists that every string and every

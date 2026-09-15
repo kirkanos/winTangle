@@ -34,6 +34,8 @@ modelled on Rectangle for macOS.
 - Automatic update checking through WinSparkle, once a day, switchable.
 - English and German interface, following the Windows display language by
   default and pinnable in the settings or through `"language"` in the config.
+  Picking a language in the settings window applies it immediately, and
+  cancelling puts the previous one back.
 - Trace-free removal: the setup asks during uninstall whether settings,
   autostart, URL protocol and update state should go as well, and switches
   Windows' own snapping back on. Portable users get the same through

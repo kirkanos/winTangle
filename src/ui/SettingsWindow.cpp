@@ -32,6 +32,11 @@ enum : int {
     kIdCheckCursor,
     kIdCheckUpdates,
     kIdLanguage,
+    kIdLabelActions,
+    kIdLabelNewCombination,
+    kIdLabelOuterGap,
+    kIdLabelInnerGap,
+    kIdLabelLanguage,
     kIdImport,
     kIdExport,
     kIdSave,
@@ -65,6 +70,20 @@ int GetInt(HWND edit) {
 
 void SetInt(HWND edit, int value) { SetWindowTextW(edit, std::to_wstring(value).c_str()); }
 
+// Fills the picker: "same as Windows" first, then one entry per language,
+// each written in that language itself. The selection is preserved.
+void FillLanguageBox(HWND box) {
+    const auto selected = SendMessageW(box, CB_GETCURSEL, 0, 0);
+    SendMessageW(box, CB_RESETCONTENT, 0, 0);
+    SendMessageW(box, CB_ADDSTRING, 0,
+                 reinterpret_cast<LPARAM>(T(Str::SettingsLanguageAuto).c_str()));
+    for (Language language : AllLanguages()) {
+        const std::wstring name = Widen(LanguageDisplayName(language));
+        SendMessageW(box, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(name.c_str()));
+    }
+    if (selected != CB_ERR) SendMessageW(box, CB_SETCURSEL, static_cast<WPARAM>(selected), 0);
+}
+
 bool ChooseFile(HWND owner, bool save, std::wstring& path) {
     wchar_t buffer[MAX_PATH]{};
     if (!path.empty()) wcsncpy_s(buffer, path.c_str(), _TRUNCATE);
@@ -91,10 +110,11 @@ SettingsWindow::SettingsWindow(HINSTANCE instance, const Config& config, SaveFn 
 
 void SettingsWindow::UpdateConfig(const Config& config) {
     config_ = config;
-    if (hwnd_) {
-        WriteConfigIntoControls();
-        FillList();
-    }
+    if (!hwnd_) return;
+
+    SetLanguage(config_.language.value_or(DetectUiLanguage()));
+    WriteConfigIntoControls();
+    RelabelControls();
 }
 
 void SettingsWindow::Show() {
@@ -126,6 +146,77 @@ void SettingsWindow::Show() {
     SetForegroundWindow(hwnd_);
 }
 
+void SettingsWindow::OnLanguageChanged() {
+    const auto selected = SendMessageW(languageBox_, CB_GETCURSEL, 0, 0);
+    if (selected == CB_ERR) return;
+
+    if (selected == 0) {
+        SetLanguage(DetectUiLanguage());
+    } else {
+        const auto& all = AllLanguages();
+        const size_t index = static_cast<size_t>(selected) - 1;
+        if (index >= all.size()) return;
+        SetLanguage(all[index]);
+    }
+    RelabelControls();
+}
+
+void SettingsWindow::RelabelControls() {
+    if (!hwnd_) return;
+
+    SetWindowTextW(hwnd_, T(Str::SettingsTitle).c_str());
+
+    const struct {
+        int id;
+        Str text;
+    } captions[] = {
+        {kIdLabelActions, Str::SettingsActionsHeading},
+        {kIdLabelNewCombination, Str::SettingsNewCombination},
+        {kIdLabelOuterGap, Str::SettingsOuterGap},
+        {kIdLabelInnerGap, Str::SettingsInnerGap},
+        {kIdLabelLanguage, Str::SettingsLanguage},
+        {kIdAssign, Str::SettingsAssign},
+        {kIdClear, Str::SettingsRemove},
+        {kIdCheckCycle, Str::SettingsCycleSizes},
+        {kIdCheckSnap, Str::SettingsSnapAreas},
+        {kIdCheckDisableAero, Str::SettingsDisableWindowsSnap},
+        {kIdCheckAutostart, Str::SettingsLaunchAtLogin},
+        {kIdCheckCursor, Str::SettingsMoveCursor},
+        {kIdCheckUpdates, Str::SettingsCheckUpdates},
+        {kIdImport, Str::SettingsImport},
+        {kIdExport, Str::SettingsExport},
+        {kIdSave, Str::SettingsSave},
+        {kIdCancel, Str::SettingsCancel},
+    };
+    for (const auto& caption : captions) {
+        if (HWND control = GetDlgItem(hwnd_, caption.id)) {
+            SetWindowTextW(control, T(caption.text).c_str());
+        }
+    }
+
+    // Column headers and the rows, which carry the action labels.
+    LVCOLUMNW col{};
+    col.mask = LVCF_TEXT;
+    std::wstring header = T(Str::SettingsColumnAction);
+    col.pszText = header.data();
+    ListView_SetColumn(list_, 0, &col);
+    header = T(Str::SettingsColumnShortcut);
+    col.pszText = header.data();
+    ListView_SetColumn(list_, 1, &col);
+
+    FillLanguageBox(languageBox_);
+
+    // Keep the selected row across the rebuild, so the language switch does
+    // not move the user somewhere else in a list of 58 entries.
+    const int selectedRow = SelectedRow();
+    FillList();
+    if (selectedRow >= 0) {
+        ListView_SetItemState(list_, selectedRow, LVIS_SELECTED | LVIS_FOCUSED,
+                              LVIS_SELECTED | LVIS_FOCUSED);
+        ListView_EnsureVisible(list_, selectedRow, FALSE);
+    }
+}
+
 LRESULT CALLBACK SettingsWindow::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     auto* self = reinterpret_cast<SettingsWindow*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
 
@@ -135,6 +226,8 @@ LRESULT CALLBACK SettingsWindow::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
             self = static_cast<SettingsWindow*>(cs->lpCreateParams);
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(self));
             self->hwnd_ = hwnd;
+            self->languageAtOpen_ = CurrentLanguage();
+            self->saved_ = false;
             self->CreateControls(hwnd);
             self->WriteConfigIntoControls();
             self->FillList();
@@ -142,6 +235,10 @@ LRESULT CALLBACK SettingsWindow::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
         }
         case WM_COMMAND: {
             if (!self) break;
+            if (LOWORD(wp) == kIdLanguage && HIWORD(wp) == CBN_SELCHANGE) {
+                self->OnLanguageChanged();
+                return 0;
+            }
             switch (LOWORD(wp)) {
                 case kIdAssign: self->ApplyRecordedShortcut(); return 0;
                 case kIdClear: self->ClearShortcut(); return 0;
@@ -149,6 +246,7 @@ LRESULT CALLBACK SettingsWindow::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
                 case kIdExport: self->ExportToFile(); return 0;
                 case kIdSave: {
                     self->ReadControlsIntoConfig();
+                    self->saved_ = true;
                     if (self->onSave_) self->onSave_(self->config_);
                     DestroyWindow(hwnd);
                     return 0;
@@ -175,7 +273,12 @@ LRESULT CALLBACK SettingsWindow::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
             DestroyWindow(hwnd);
             return 0;
         case WM_DESTROY:
-            if (self) self->hwnd_ = nullptr;
+            if (self) {
+                // Cancelled or closed: undo a language preview, otherwise the
+                // tray menu would speak a language the user backed out of.
+                if (!self->saved_) SetLanguage(self->languageAtOpen_);
+                self->hwnd_ = nullptr;
+            }
             return 0;
         default:
             break;
@@ -228,7 +331,7 @@ LRESULT CALLBACK SettingsWindow::RecorderProc(HWND hwnd, UINT msg, WPARAM wp, LP
 
 void SettingsWindow::CreateControls(HWND parent) {
     MakeControl(parent, WC_STATICW, T(Str::SettingsActionsHeading).c_str(), 0, 12, 10, 400, 18,
-                -1, instance_);
+                kIdLabelActions, instance_);
 
     list_ = CreateWindowExW(WS_EX_CLIENTEDGE, WC_LISTVIEWW, L"",
                             WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
@@ -249,7 +352,7 @@ void SettingsWindow::CreateControls(HWND parent) {
     ListView_InsertColumn(list_, 1, &col);
 
     MakeControl(parent, WC_STATICW, T(Str::SettingsNewCombination).c_str(), 0, 12, 374, 120, 18,
-                -1, instance_);
+                kIdLabelNewCombination, instance_);
     recorder_ = MakeControl(parent, WC_EDITW, L"", WS_BORDER | ES_READONLY, 136, 371, 220, 24,
                             kIdRecorder, instance_);
     SetWindowSubclass(recorder_, RecorderProc, kIdRecorder, reinterpret_cast<DWORD_PTR>(this));
@@ -261,12 +364,12 @@ void SettingsWindow::CreateControls(HWND parent) {
                 24, kIdClear,
                 instance_);
 
-    MakeControl(parent, WC_STATICW, T(Str::SettingsOuterGap).c_str(), 0, 12, 416, 130, 18, -1,
-                instance_);
+    MakeControl(parent, WC_STATICW, T(Str::SettingsOuterGap).c_str(), 0, 12, 416, 130, 18,
+                kIdLabelOuterGap, instance_);
     outerGap_ = MakeControl(parent, WC_EDITW, L"0", WS_BORDER | ES_NUMBER, 146, 413, 60, 22,
                             kIdOuterGap, instance_);
-    MakeControl(parent, WC_STATICW, T(Str::SettingsInnerGap).c_str(), 0, 226, 416, 130, 18, -1,
-                instance_);
+    MakeControl(parent, WC_STATICW, T(Str::SettingsInnerGap).c_str(), 0, 226, 416, 130, 18,
+                kIdLabelInnerGap, instance_);
     innerGap_ = MakeControl(parent, WC_EDITW, L"0", WS_BORDER | ES_NUMBER, 360, 413, 60, 22,
                             kIdInnerGap, instance_);
 
@@ -289,8 +392,8 @@ void SettingsWindow::CreateControls(HWND parent) {
 
     // Language picker. First entry follows Windows, then one entry per
     // language, each written in that language itself.
-    MakeControl(parent, WC_STATICW, T(Str::SettingsLanguage).c_str(), 0, 12, 500, 90, 18, -1,
-                instance_);
+    MakeControl(parent, WC_STATICW, T(Str::SettingsLanguage).c_str(), 0, 12, 500, 90, 18,
+                kIdLabelLanguage, instance_);
     languageBox_ = CreateWindowExW(0, WC_COMBOBOXW, L"",
                                    WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST |
                                        WS_VSCROLL,
@@ -299,12 +402,7 @@ void SettingsWindow::CreateControls(HWND parent) {
                                    instance_, nullptr);
     SendMessageW(languageBox_, WM_SETFONT,
                  reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)), TRUE);
-    SendMessageW(languageBox_, CB_ADDSTRING, 0,
-                 reinterpret_cast<LPARAM>(T(Str::SettingsLanguageAuto).c_str()));
-    for (Language language : AllLanguages()) {
-        const std::wstring name = Widen(LanguageDisplayName(language));
-        SendMessageW(languageBox_, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(name.c_str()));
-    }
+    FillLanguageBox(languageBox_);
 
     MakeControl(parent, WC_BUTTONW, T(Str::SettingsImport).c_str(), BS_PUSHBUTTON, 12, 534, 120, 26, kIdImport,
                 instance_);

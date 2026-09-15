@@ -33,6 +33,16 @@ private:
                                          UINT_PTR id, DWORD_PTR ref);
 
     void CreateControls(HWND parent);
+
+    // Re-applies every caption in the language currently in use. Called when
+    // the language changes while the window is open -- through the picker or
+    // by importing a config that names a different one.
+    void RelabelControls();
+
+    // Picker changed: switch language immediately so the effect is visible
+    // before saving.
+    void OnLanguageChanged();
+
     void FillList();
     void UpdateListRow(int row);
     void ApplyRecordedShortcut();
@@ -59,6 +69,12 @@ private:
     HWND checkCursor_ = nullptr;
     HWND checkUpdates_ = nullptr;
     HWND languageBox_ = nullptr;
+
+    // The language in use when the window opened. Cancelling has to undo a
+    // live preview, otherwise the tray menu would keep a language the user
+    // just backed out of.
+    Language languageAtOpen_ = Language::English;
+    bool saved_ = false;
 
     Shortcut recorded_;
 };
