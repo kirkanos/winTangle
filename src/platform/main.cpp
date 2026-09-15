@@ -1,4 +1,10 @@
 // WinTangle -- Fenstermanagement fuer Windows nach dem Vorbild von Rectangle.
+// Copyright (C) 2026 Andreas Hacker
+//
+// Dieses Programm ist freie Software: Sie koennen es unter den Bedingungen der
+// GNU General Public License, Version 3 oder (nach Ihrer Wahl) jeder spaeteren
+// Version, weitergeben und/oder veraendern. Es wird ohne jede Gewaehrleistung
+// bereitgestellt; siehe die Datei LICENSE bzw. <https://www.gnu.org/licenses/>.
 //
 // Aufbau: ein unsichtbares Nachrichtenfenster ist die Zentrale. Daran haengen
 // die globalen Hotkeys (WM_HOTKEY), das Tray-Symbol, der Named-Pipe-Lauscher
@@ -298,11 +304,15 @@ void App::HandleUriCommands() {
 }
 
 void App::ShowAbout() {
+    // GPL v3 §5(d): ein interaktives Programm muss den Lizenzhinweis anzeigen.
     MessageBoxW(nullptr,
                 L"WinTangle\n\nFensteranordnung per Tastenkombination und Ziehen,\n"
                 L"nach dem Vorbild von Rectangle für macOS.\n\n"
                 L"Aktionen lassen sich auch per URL auslösen:\n"
-                L"wintangle://execute-action?name=left-half",
+                L"wintangle://execute-action?name=left-half\n\n"
+                L"Copyright (C) 2026 Andreas Hacker\n"
+                L"Freie Software unter der GNU General Public License v3 oder später.\n"
+                L"Ohne jede Gewährleistung. Einzelheiten in der Datei LICENSE.",
                 L"Über WinTangle", MB_ICONINFORMATION | MB_OK);
 }
 

@@ -148,3 +148,12 @@ Hotkey, Tray-Menü, URL-Aufruf und Drag-Snap laufen alle durch denselben Pfad.
 Rectangle von Ryan Hanson, MIT-Lizenz. WinTangle ist eine eigenständige
 Neuimplementierung für Win32 — übernommen sind Funktionsumfang, Standard-
 belegung und das Verhalten, kein Code.
+
+## Lizenz
+
+Copyright (C) 2026 Andreas Hacker
+
+WinTangle ist freie Software unter der [GNU General Public License v3](LICENSE)
+oder (nach Ihrer Wahl) einer späteren Version. Weitergabe und Veränderung sind
+erlaubt, solange abgeleitete Werke unter denselben Bedingungen stehen und ihren
+Quelltext offenlegen. Das Programm wird ohne jede Gewährleistung bereitgestellt.
