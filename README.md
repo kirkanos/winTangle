@@ -17,8 +17,9 @@ Natives C++/Win32, keine Runtime-Abhängigkeit, eine einzelne Exe.
 | Win32-Schicht (Fenster, Monitore, Hotkeys, Tray, Drag-Snap, Einstellungen) | kompiliert warnungsfrei (mingw-w64 Cross-Build), **auf echtem Windows noch nicht ausgeführt** |
 
 Entwickelt wird auf macOS. Der Kern läuft und wird dort getestet, die
-Win32-Schicht wird per mingw-w64 gegengebaut — das fängt Compile- und
-Linkfehler, sagt aber nichts über das Laufzeitverhalten. Offen ist damit
+Win32-Schicht wird lokal per mingw-w64 gegengebaut — das fängt Compile- und
+Linkfehler, sagt aber nichts über das Laufzeitverhalten. Verbindlich ist der
+MSVC-Build in der CI. Offen ist damit
 genau ein Schritt: die Exe auf einem Windows-Rechner starten und die
 Testmatrix unten durchgehen.
 
@@ -48,6 +49,28 @@ cmake --build build-win -j
 
 Die dabei entstehende Exe hängt an `libstdc++`/`libgcc` und ist nur zur
 Verifikation gedacht; ausgeliefert wird der statisch gelinkte MSVC-Build.
+
+## CI und Releases
+
+`ci.yml` läuft bei jedem Push auf `main` und bei jedem Pull Request: Kern und
+Tests unter Linux, die komplette App mit MSVC unter Windows. Die dabei
+gebaute Exe hängt 14 Tage als Artefakt am Lauf.
+
+Ein Release entsteht durch einen Tag:
+
+```
+# Version in CMakeLists.txt und Abschnitt in CHANGELOG.md pflegen, dann
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+`release.yml` baut daraufhin, testet, packt `wintangle-<version>-x64.zip`
+(Exe, LICENSE, README) und legt die Release-Seite an. Die Notizen bestehen aus
+dem CHANGELOG-Abschnitt zur Version, der Commit-Liste seit dem vorigen Tag und
+der SHA-256-Prüfsumme des Archivs. Tags mit Suffix (`v0.2.0-rc1`) werden als
+Vorabversion markiert.
+
+Stimmt der Tag nicht mit der Version in `CMakeLists.txt` überein, bricht der
+Lauf ab — sonst stünde in der Exe eine andere Nummer als auf der Release-Seite.
 
 ## Standardbelegung
 

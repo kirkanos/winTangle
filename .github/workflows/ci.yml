@@ -1,14 +1,17 @@
-name: build
+name: ci
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
-  # Der Berechnungskern ist plattformfrei und wird deshalb auch dort gebaut,
-  # wo entwickelt wird -- so faellt ein Geometriefehler sofort auf.
+  # Der Berechnungskern ist plattformfrei. Ihn zusaetzlich unter Linux zu
+  # bauen haelt diese Trennung ehrlich: zieht jemand versehentlich
+  # <windows.h> in den Kern, faellt es hier sofort auf.
   core:
-    runs-on: macos-latest
+    name: Kern (Linux)
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
@@ -16,6 +19,7 @@ jobs:
       - run: ctest --test-dir build --output-on-failure
 
   windows:
+    name: App (Windows, MSVC)
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,5 +28,6 @@ jobs:
       - run: ctest --test-dir build -C Release --output-on-failure
       - uses: actions/upload-artifact@v4
         with:
-          name: wintangle-x64
+          name: wintangle-x64-${{ github.sha }}
           path: build/src/platform/Release/wintangle.exe
+          retention-days: 14

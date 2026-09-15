@@ -1,0 +1,129 @@
+name: release
+
+# Ausgeloest durch einen Tag wie v0.1.0. Baut die Exe, packt sie und legt eine
+# GitHub-Release-Seite mit Aenderungen und Pruefsumme an.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write  # noetig, um die Release-Seite anzulegen
+
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash  # auf dem Windows-Runner ist Git Bash vorhanden
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # gesamte Historie fuer die Aenderungsliste
+
+      # Die Versionsnummer steckt in der Exe (VERSIONINFO aus der CMakeLists).
+      # Laeuft sie gegen den Tag auseinander, wird hier abgebrochen, statt eine
+      # falsch beschriftete Exe zu veroeffentlichen.
+      - name: Version gegen Tag pruefen
+        id: version
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+          cmake_version=$(grep -oE 'project\(WinTangle VERSION [0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt \
+                          | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          if [ "$version" != "$cmake_version" ]; then
+            echo "::error::Tag $tag passt nicht zur Version $cmake_version in CMakeLists.txt"
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Bauen
+        run: |
+          cmake -S . -B build -A x64
+          cmake --build build --config Release -j
+
+      - name: Tests
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Paket schnueren
+        id: package
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          name="wintangle-${version}-x64"
+          mkdir -p "dist/${name}"
+          cp build/src/platform/Release/wintangle.exe "dist/${name}/"
+          cp LICENSE README.md "dist/${name}/"
+          (cd dist && 7z a -tzip "${name}.zip" "${name}" > /dev/null)
+          sha=$(cd dist && sha256sum "${name}.zip" | cut -d' ' -f1)
+          echo "${sha}  ${name}.zip" > "dist/${name}.zip.sha256"
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+          echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+
+      # Die Release-Notizen bestehen aus dem Abschnitt der CHANGELOG.md zu
+      # dieser Version plus der Commit-Liste seit dem vorigen Tag. Fehlt der
+      # Abschnitt, bleibt immer noch die Commit-Liste uebrig.
+      - name: Release-Notizen zusammenstellen
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          tag="${{ steps.version.outputs.tag }}"
+          previous=$(git describe --tags --abbrev=0 "${tag}^" 2>/dev/null || true)
+
+          {
+            if awk -v v="$version" '
+                 $0 ~ "^## \\[" v "\\]" { found=1; next }
+                 found && (/^## / || /^\[[^]]+\]: /) { exit }
+                 found { print }
+               ' CHANGELOG.md | grep -q '[^[:space:]]'; then
+              awk -v v="$version" '
+                $0 ~ "^## \\[" v "\\]" { found=1; next }
+                found && (/^## / || /^\[[^]]+\]: /) { exit }
+                found { print }
+              ' CHANGELOG.md
+            else
+              echo "_Kein CHANGELOG-Eintrag für ${version}._"
+              echo
+            fi
+
+            echo "## Commits"
+            echo
+            if [ -n "$previous" ]; then
+              git log --no-merges --pretty='- %s (%h)' "${previous}..${tag}"
+            else
+              git log --no-merges --pretty='- %s (%h)' "${tag}"
+            fi
+
+            echo
+            echo "## Datei"
+            echo
+            echo '```'
+            echo "${{ steps.package.outputs.sha }}  ${{ steps.package.outputs.name }}.zip"
+            echo '```'
+            echo
+            echo "Windows 10/11 x64. Die Exe ist nicht signiert – SmartScreen meldet sich"
+            echo "beim ersten Start; die Prüfsumme oben deckt das ab."
+
+            if [ -n "$previous" ]; then
+              echo
+              echo "**Vollständiger Vergleich:** https://github.com/${GITHUB_REPOSITORY}/compare/${previous}...${tag}"
+            fi
+          } > release-notes.md
+
+          cat release-notes.md
+
+      - name: Release anlegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.version.outputs.tag }}"
+          name="${{ steps.package.outputs.name }}"
+          # Tags mit Suffix (v0.2.0-rc1) werden als Vorabversion markiert.
+          prerelease=""
+          case "$tag" in *-*) prerelease="--prerelease";; esac
+
+          gh release create "$tag" \
+            --title "WinTangle ${{ steps.version.outputs.version }}" \
+            --notes-file release-notes.md \
+            $prerelease \
+            "dist/${name}.zip" \
+            "dist/${name}.zip.sha256"

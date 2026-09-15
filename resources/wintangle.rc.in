@@ -1,3 +1,5 @@
+// Wird von CMake aus wintangle.rc.in erzeugt -- die Versionsnummer kommt aus
+// project() in der CMakeLists, damit Exe und Git-Tag nicht auseinanderlaufen.
 #include <windows.h>
 
 APPICON ICON "wintangle.ico"
@@ -6,8 +8,8 @@ APPICON ICON "wintangle.ico"
 CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "wintangle.manifest"
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 0, 1, 0, 0
-PRODUCTVERSION 0, 1, 0, 0
+FILEVERSION @WINTANGLE_VERSION_COMMA@
+PRODUCTVERSION @WINTANGLE_VERSION_COMMA@
 FILEOS VOS_NT_WINDOWS32
 FILETYPE VFT_APP
 BEGIN
@@ -16,11 +18,11 @@ BEGIN
         BLOCK "040704b0"
         BEGIN
             VALUE "FileDescription", "WinTangle - Fensteranordnung"
-            VALUE "FileVersion", "0.1.0.0"
+            VALUE "FileVersion", "@PROJECT_VERSION@.0"
             VALUE "InternalName", "wintangle"
             VALUE "OriginalFilename", "wintangle.exe"
             VALUE "ProductName", "WinTangle"
-            VALUE "ProductVersion", "0.1.0.0"
+            VALUE "ProductVersion", "@PROJECT_VERSION@.0"
         END
     END
     BLOCK "VarFileInfo"
