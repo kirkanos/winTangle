@@ -47,8 +47,43 @@ cmake -S . -B build-win -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-w64.cmake
 cmake --build build-win -j
 ```
 
+Die Update-Prüfung ist dabei automatisch aus (`WINTANGLE_ENABLE_UPDATES=OFF`):
+WinSparkle liefert nur MSVC-Binärdateien. Das Programm läuft trotzdem
+vollständig, nur die Update-Einträge sind abgeblendet.
+
 Die dabei entstehende Exe hängt an `libstdc++`/`libgcc` und ist nur zur
 Verifikation gedacht; ausgeliefert wird der statisch gelinkte MSVC-Build.
+
+## Installation
+
+Zwei Wege, beide auf der [Release-Seite](https://github.com/kirkanos/winTangle/releases):
+
+- **Setup-Exe** — installiert pro Benutzer (keine Administratorrechte, keine
+  UAC-Abfrage), richtet Autostart, Deinstallation und das `wintangle://`-Protokoll
+  ein und meldet sich selbst, wenn eine neue Version da ist.
+- **ZIP** — entpacken und starten. Kein Eintrag in der Softwareliste, Autostart
+  über das Tray-Menü.
+
+Nichts davon ist signiert, SmartScreen meldet sich also beim ersten Start
+(„Weitere Informationen" → „Trotzdem ausführen"). Die Prüfsummen jedes
+Releases stehen auf der Release-Seite.
+
+## Updates
+
+Die installierte Fassung prüft einmal täglich, ob es eine neue Version gibt,
+und bietet sie zur Installation an — dasselbe Verfahren wie bei Rectangle, dort
+über Sparkle, hier über [WinSparkle](https://winsparkle.org) (MIT-Lizenz).
+Abschalten im Tray-Menü oder in den Einstellungen; von Hand suchen über
+„Nach Updates suchen…".
+
+Technisch liest WinSparkle eine Appcast-XML von
+`releases/latest/download/appcast.xml`. GitHub leitet diese Adresse immer auf
+das neueste Release um, sie muss deshalb nie gepflegt werden. Die Datei
+entsteht im Release-Workflow aus `packaging/make_appcast.py`, die angezeigten
+Änderungen kommen aus der CHANGELOG.md.
+
+Der ZIP-Download aktualisiert sich genauso — er ersetzt sich dabei aber durch
+eine Installation, weil das Update den Installer ausführt.
 
 ## CI und Releases
 
@@ -63,11 +98,11 @@ Ein Release entsteht durch einen Tag:
 git tag v0.1.0 && git push origin v0.1.0
 ```
 
-`release.yml` baut daraufhin, testet, packt `wintangle-<version>-x64.zip`
-(Exe, LICENSE, README) und legt die Release-Seite an. Die Notizen bestehen aus
-dem CHANGELOG-Abschnitt zur Version, der Commit-Liste seit dem vorigen Tag und
-der SHA-256-Prüfsumme des Archivs. Tags mit Suffix (`v0.2.0-rc1`) werden als
-Vorabversion markiert.
+`release.yml` baut daraufhin, testet und legt die Release-Seite an mit:
+Setup-Exe (Inno Setup), portablem ZIP, `SHA256SUMS.txt` und `appcast.xml`.
+Die Notizen bestehen aus dem CHANGELOG-Abschnitt zur Version, der Commit-Liste
+seit dem vorigen Tag und den Prüfsummen. Tags mit Suffix (`v0.2.0-rc1`) werden
+als Vorabversion markiert.
 
 Stimmt der Tag nicht mit der Version in `CMakeLists.txt` überein, bricht der
 Lauf ab — sonst stünde in der Exe eine andere Nummer als auf der Release-Seite.
@@ -133,6 +168,7 @@ src/platform/  Win32: Fensterzugriff, Monitore, Ausführung, WinMain
 src/app/       Hotkeys, Tray-Symbol, Autostart, URL-Schema, Pfade
 src/snap/      Drag-Erkennung und Vorschau-Overlay
 src/ui/        Einstellungsfenster
+packaging/     Inno-Setup-Skript und Appcast-Erzeugung
 ```
 
 Der Kern rechnet ausschließlich mit `Rect` und kennt kein `HWND`. Jede Aktion

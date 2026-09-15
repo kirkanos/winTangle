@@ -22,6 +22,7 @@ add_executable(wintangle WIN32
     ../app/HotkeyManager.cpp
     ../app/Paths.cpp
     ../app/TrayIcon.cpp
+    ../app/Updater.cpp
     ../app/UriHandler.cpp
     ../snap/DragTracker.cpp
     ../snap/Footprint.cpp
@@ -49,7 +50,57 @@ target_include_directories(wintangle PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/resources
 )
-target_compile_definitions(wintangle PRIVATE UNICODE _UNICODE)
+target_compile_definitions(wintangle PRIVATE
+    UNICODE
+    _UNICODE
+    # Version aus project() -- dieselbe Quelle wie die Versionsressource, damit
+    # Info-Box, Exe-Eigenschaften und Update-Pruefung nie auseinanderlaufen.
+    WINTANGLE_VERSION="${PROJECT_VERSION}"
+    WINTANGLE_VERSION_W=L"${PROJECT_VERSION}"
+)
+
+# ---------------------------------------------------------------------------
+# WinSparkle: Update-Pruefung aus dem Programm heraus.
+#
+# Das offizielle Paket enthaelt nur MSVC-Binaerdateien, deshalb ist die Option
+# unter mingw standardmaessig aus. Ohne WinSparkle bleibt das Programm voll
+# funktionsfaehig -- Updater.cpp wird dann zu leeren Aufrufen.
+# ---------------------------------------------------------------------------
+option(WINTANGLE_ENABLE_UPDATES "Update-Pruefung mit WinSparkle einbauen" ${MSVC})
+
+if(WINTANGLE_ENABLE_UPDATES)
+    if(NOT MSVC)
+        message(FATAL_ERROR
+            "WINTANGLE_ENABLE_UPDATES braucht MSVC -- WinSparkle liefert nur "
+            "MSVC-Binaerdateien aus. Fuer andere Compiler mit "
+            "-DWINTANGLE_ENABLE_UPDATES=OFF bauen.")
+    endif()
+
+    include(FetchContent)
+    FetchContent_Declare(winsparkle
+        URL https://github.com/vslavik/winsparkle/releases/download/v0.9.4/WinSparkle-0.9.4.zip
+        URL_HASH SHA256=6037df37fc263bd1650a1c4949681a9d40ffe991d01f35892a406cb5d103c976
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+    FetchContent_MakeAvailable(winsparkle)
+
+    target_include_directories(wintangle PRIVATE ${winsparkle_SOURCE_DIR}/include)
+    target_link_libraries(wintangle PRIVATE ${winsparkle_SOURCE_DIR}/x64/Release/WinSparkle.lib)
+    target_compile_definitions(wintangle PRIVATE WINTANGLE_WITH_WINSPARKLE)
+
+    # Die DLL muss neben der Exe liegen -- sowohl im Build- als auch im
+    # Installationsverzeichnis.
+    add_custom_command(TARGET wintangle POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${winsparkle_SOURCE_DIR}/x64/Release/WinSparkle.dll
+                $<TARGET_FILE_DIR:wintangle>
+        COMMENT "WinSparkle.dll neben die Exe kopieren"
+    )
+
+    # Fuer das Release-Paket: Pfade nach oben reichen.
+    set(WINSPARKLE_DLL ${winsparkle_SOURCE_DIR}/x64/Release/WinSparkle.dll PARENT_SCOPE)
+    set(WINSPARKLE_LICENSE ${winsparkle_SOURCE_DIR}/COPYING PARENT_SCOPE)
+endif()
 
 if(MINGW)
     # Ohne -municode sucht der Linker main() statt wWinMain(). Der

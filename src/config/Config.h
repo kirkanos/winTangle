@@ -23,6 +23,7 @@ struct Config {
     bool disableWindowsSnap = false;  // Windows-eigenes AeroSnap abschalten
     bool launchAtLogin = false;
     bool moveCursorWithWindow = false;
+    bool automaticUpdates = true;   // taegliche Pruefung via WinSparkle
 
     // Exe-Namen (klein geschrieben, ohne Pfad), fuer die WinTangle nichts tut.
     std::vector<std::string> ignoredApps;

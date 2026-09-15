@@ -24,7 +24,7 @@ public:
     void ShowBalloon(const std::wstring& title, const std::wstring& text, bool warning = false);
 
     // Zeigt das Kontextmenue an der aktuellen Mausposition.
-    void ShowMenu(const Config& config, bool autostartEnabled);
+    void ShowMenu(const Config& config, bool autostartEnabled, bool updatesSupported);
 
 private:
     NOTIFYICONDATAW data_{};

@@ -23,6 +23,7 @@
 #include "app/HotkeyManager.h"
 #include "app/Paths.h"
 #include "app/TrayIcon.h"
+#include "app/Updater.h"
 #include "app/UriHandler.h"
 #include "config/Config.h"
 #include "core/Uri.h"
@@ -68,6 +69,7 @@ private:
     std::unique_ptr<DragTracker> dragTracker_;
     std::unique_ptr<SettingsWindow> settings_;
     UriServer uriServer_;
+    Updater updater_;
 
     // Damit die Meldung "Fenster gehoert einem Prozess mit hoeheren Rechten"
     // nicht bei jedem Tastendruck erscheint.
@@ -103,6 +105,7 @@ void App::SaveConfig() {
 
 void App::ApplyConfig() {
     if (executor_) executor_->SetConfig(config_);
+    updater_.SetAutomaticChecks(config_.automaticUpdates);
     if (dragTracker_) dragTracker_->SetConfig(config_);
     if (settings_) settings_->UpdateConfig(config_);
 
@@ -163,6 +166,10 @@ bool App::Initialize() {
         SaveConfig();
     });
 
+    // WinSparkle erst starten, wenn die Konfiguration steht -- der Schalter
+    // fuer die automatische Pruefung geht direkt an die Bibliothek.
+    updater_.Initialize(Widen(WINTANGLE_VERSION), config_.automaticUpdates);
+
     uriServer_.Start(hwnd_);
     RegisterUriScheme();
     ApplyConfig();
@@ -212,7 +219,7 @@ LRESULT App::HandleMessage(UINT msg, WPARAM wp, LPARAM lp) {
 
         case kMsgTrayCallback:
             if (LOWORD(lp) == WM_RBUTTONUP || LOWORD(lp) == WM_CONTEXTMENU) {
-                tray_->ShowMenu(config_, IsAutostartEnabled());
+                tray_->ShowMenu(config_, IsAutostartEnabled(), Updater::IsSupported());
             } else if (LOWORD(lp) == WM_LBUTTONDBLCLK) {
                 settings_->Show();
             }
@@ -247,6 +254,12 @@ LRESULT App::HandleMessage(UINT msg, WPARAM wp, LPARAM lp) {
                     ApplyConfig();
                     SaveConfig();
                     return 0;
+                case kCmdCheckUpdates: updater_.CheckWithUi(); return 0;
+                case kCmdToggleAutoUpdates:
+                    config_.automaticUpdates = !config_.automaticUpdates;
+                    ApplyConfig();
+                    SaveConfig();
+                    return 0;
                 case kCmdAbout: ShowAbout(); return 0;
                 case kCmdQuit: DestroyWindow(hwnd_); return 0;
                 default: return 0;
@@ -254,6 +267,7 @@ LRESULT App::HandleMessage(UINT msg, WPARAM wp, LPARAM lp) {
         }
 
         case WM_DESTROY:
+            updater_.Shutdown();
             uriServer_.Stop();
             dragTracker_.reset();
             hotkeys_.reset();
@@ -310,6 +324,7 @@ void App::ShowAbout() {
                 L"nach dem Vorbild von Rectangle für macOS.\n\n"
                 L"Aktionen lassen sich auch per URL auslösen:\n"
                 L"wintangle://execute-action?name=left-half\n\n"
+                L"Version " WINTANGLE_VERSION_W L"\n"
                 L"Copyright (C) 2026 Andreas Hacker\n"
                 L"Freie Software unter der GNU General Public License v3 oder später.\n"
                 L"Ohne jede Gewährleistung. Einzelheiten in der Datei LICENSE.",

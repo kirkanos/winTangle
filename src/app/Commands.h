@@ -16,6 +16,8 @@ enum : unsigned {
     kCmdToggleCycleSizes = 103,
     kCmdAbout = 104,
     kCmdQuit = 105,
+    kCmdCheckUpdates = 106,
+    kCmdToggleAutoUpdates = 107,
 };
 
 // Eigene Fensternachrichten.

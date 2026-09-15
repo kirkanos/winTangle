@@ -69,7 +69,7 @@ void TrayIcon::ShowBalloon(const std::wstring& title, const std::wstring& text, 
     Shell_NotifyIconW(NIM_MODIFY, &balloon);
 }
 
-void TrayIcon::ShowMenu(const Config& config, bool autostartEnabled) {
+void TrayIcon::ShowMenu(const Config& config, bool autostartEnabled, bool updatesSupported) {
     HMENU menu = CreatePopupMenu();
     if (!menu) return;
 
@@ -97,6 +97,12 @@ void TrayIcon::ShowMenu(const Config& config, bool autostartEnabled) {
     AppendMenuW(menu, MF_STRING | (autostartEnabled ? MF_CHECKED : 0), kCmdToggleAutostart,
                 L"Mit Windows starten");
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
+    if (updatesSupported) {
+        AppendMenuW(menu, MF_STRING, kCmdCheckUpdates, L"Nach Updates suchen…");
+        AppendMenuW(menu, MF_STRING | (config.automaticUpdates ? MF_CHECKED : 0),
+                    kCmdToggleAutoUpdates, L"Täglich nach Updates suchen");
+        AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
+    }
     AppendMenuW(menu, MF_STRING, kCmdSettings, L"Einstellungen…");
     AppendMenuW(menu, MF_STRING, kCmdAbout, L"Über WinTangle");
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);

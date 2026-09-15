@@ -57,6 +57,7 @@ private:
     HWND checkDisableAero_ = nullptr;
     HWND checkAutostart_ = nullptr;
     HWND checkCursor_ = nullptr;
+    HWND checkUpdates_ = nullptr;
 
     Shortcut recorded_;
 };

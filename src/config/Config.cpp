@@ -113,6 +113,7 @@ std::string Config::ToJson() const {
     root.Set("disableWindowsSnap", disableWindowsSnap);
     root.Set("launchAtLogin", launchAtLogin);
     root.Set("moveCursorWithWindow", moveCursorWithWindow);
+    root.Set("automaticUpdates", automaticUpdates);
     root.Set("ignoredApps", ignored);
     root.Set("shortcuts", shortcutsObj);
     return root.Dump(2) + "\n";
@@ -143,6 +144,8 @@ bool Config::FromJson(std::string_view text, Config& out, std::string& error,
         c.launchAtLogin = root["launchAtLogin"].AsBool(c.launchAtLogin);
     if (root.Has("moveCursorWithWindow"))
         c.moveCursorWithWindow = root["moveCursorWithWindow"].AsBool(c.moveCursorWithWindow);
+    if (root.Has("automaticUpdates"))
+        c.automaticUpdates = root["automaticUpdates"].AsBool(c.automaticUpdates);
 
     if (root["ignoredApps"].IsArray()) {
         c.ignoredApps.clear();

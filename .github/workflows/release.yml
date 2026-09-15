@@ -46,19 +46,58 @@ jobs:
       - name: Tests
         run: ctest --test-dir build -C Release --output-on-failure
 
-      - name: Paket schnueren
+      # Inno Setup liegt nicht in jedem Runner-Image, deshalb sicherheitshalber
+      # nachinstallieren. Ist es da, kostet der Schritt Sekunden.
+      - name: Inno Setup bereitstellen
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+          }
+          "ISCC=$iscc" >> $env:GITHUB_ENV
+
+      - name: Portables Archiv packen
         id: package
         run: |
           version="${{ steps.version.outputs.version }}"
           name="wintangle-${version}-x64"
           mkdir -p "dist/${name}"
           cp build/src/platform/Release/wintangle.exe "dist/${name}/"
-          cp LICENSE README.md "dist/${name}/"
+          # WinSparkle liegt nach dem Build neben der Exe.
+          cp build/src/platform/Release/WinSparkle.dll "dist/${name}/"
+          cp LICENSE README.md CHANGELOG.md "dist/${name}/"
           (cd dist && 7z a -tzip "${name}.zip" "${name}" > /dev/null)
-          sha=$(cd dist && sha256sum "${name}.zip" | cut -d' ' -f1)
-          echo "${sha}  ${name}.zip" > "dist/${name}.zip.sha256"
           echo "name=${name}" >> "$GITHUB_OUTPUT"
-          echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Installer bauen
+        id: installer
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          "$ISCC" //DAppVersion="${version}" packaging/wintangle.iss
+          ls -l dist/
+          echo "name=wintangle-${version}-setup.exe" >> "$GITHUB_OUTPUT"
+
+      - name: Pruefsummen
+        id: checksums
+        run: |
+          cd dist
+          sha256sum *.zip *.exe > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          echo "block<<EOF" >> "$GITHUB_OUTPUT"
+          cat SHA256SUMS.txt >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      # Der Feed, den die installierte Fassung taeglich abfragt.
+      - name: Appcast erzeugen
+        run: |
+          python packaging/make_appcast.py \
+            --version "${{ steps.version.outputs.version }}" \
+            --tag "${{ steps.version.outputs.tag }}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --installer "dist/${{ steps.installer.outputs.name }}" \
+            --output dist/appcast.xml
+          cat dist/appcast.xml
 
       # Die Release-Notizen bestehen aus dem Abschnitt der CHANGELOG.md zu
       # dieser Version plus der Commit-Liste seit dem vorigen Tag. Fehlt der
@@ -94,14 +133,23 @@ jobs:
             fi
 
             echo
-            echo "## Datei"
+            echo "## Installation"
+            echo
+            echo "- **\`${{ steps.installer.outputs.name }}\`** – Setup, richtet Autostart,"
+            echo "  Deinstallation und die automatische Update-Prüfung ein."
+            echo "- **\`${{ steps.package.outputs.name }}.zip\`** – portabel, einfach entpacken."
+            echo
+            echo "Windows 10/11 x64. Nichts davon ist signiert – SmartScreen meldet sich"
+            echo "beim ersten Start; die Prüfsummen unten decken das ab."
+            echo
+            echo "Eine bereits installierte Fassung meldet sich von selbst: WinTangle"
+            echo "prüft einmal täglich gegen diese Release-Seite."
+            echo
+            echo "## Prüfsummen"
             echo
             echo '```'
-            echo "${{ steps.package.outputs.sha }}  ${{ steps.package.outputs.name }}.zip"
+            echo "${{ steps.checksums.outputs.block }}"
             echo '```'
-            echo
-            echo "Windows 10/11 x64. Die Exe ist nicht signiert – SmartScreen meldet sich"
-            echo "beim ersten Start; die Prüfsumme oben deckt das ab."
 
             if [ -n "$previous" ]; then
               echo
@@ -126,4 +174,6 @@ jobs:
             --notes-file release-notes.md \
             $prerelease \
             "dist/${name}.zip" \
-            "dist/${name}.zip.sha256"
+            "dist/${{ steps.installer.outputs.name }}" \
+            "dist/SHA256SUMS.txt" \
+            "dist/appcast.xml"

@@ -10,6 +10,7 @@
 
 #include "app/Autostart.h"
 #include "app/Paths.h"
+#include "app/Updater.h"
 #include "core/Shortcut.h"
 
 namespace wintangle {
@@ -29,6 +30,7 @@ enum : int {
     kIdCheckDisableAero,
     kIdCheckAutostart,
     kIdCheckCursor,
+    kIdCheckUpdates,
     kIdImport,
     kIdExport,
     kIdSave,
@@ -271,6 +273,11 @@ void SettingsWindow::CreateControls(HWND parent) {
                                   446, 320, 20, kIdCheckAutostart, instance_);
     checkCursor_ = MakeControl(parent, WC_BUTTONW, L"Mauszeiger mitbewegen", BS_AUTOCHECKBOX, 360,
                                470, 320, 20, kIdCheckCursor, instance_);
+    checkUpdates_ = MakeControl(parent, WC_BUTTONW, L"Täglich nach Updates suchen",
+                                BS_AUTOCHECKBOX, 360, 494, 320, 20, kIdCheckUpdates, instance_);
+    // Ohne einkompilierte Update-Pruefung bleibt der Haken sichtbar, aber
+    // abgeblendet -- so ist erkennbar, dass die Fassung sie nicht hat.
+    EnableWindow(checkUpdates_, Updater::IsSupported());
 
     MakeControl(parent, WC_BUTTONW, L"Importieren…", BS_PUSHBUTTON, 12, 534, 120, 26, kIdImport,
                 instance_);
@@ -356,6 +363,7 @@ void SettingsWindow::WriteConfigIntoControls() {
     SetCheck(checkDisableAero_, config_.disableWindowsSnap);
     SetCheck(checkAutostart_, IsAutostartEnabled());
     SetCheck(checkCursor_, config_.moveCursorWithWindow);
+    SetCheck(checkUpdates_, config_.automaticUpdates);
 }
 
 void SettingsWindow::ReadControlsIntoConfig() {
@@ -365,6 +373,7 @@ void SettingsWindow::ReadControlsIntoConfig() {
     config_.snapAreasEnabled = GetCheck(checkSnap_);
     config_.disableWindowsSnap = GetCheck(checkDisableAero_);
     config_.moveCursorWithWindow = GetCheck(checkCursor_);
+    config_.automaticUpdates = GetCheck(checkUpdates_);
     config_.launchAtLogin = GetCheck(checkAutostart_);
 }
 

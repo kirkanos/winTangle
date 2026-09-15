@@ -32,6 +32,9 @@ Bildschirmrand, nach dem Vorbild von Rectangle für macOS.
 - Aktionen per URL: `wintangle://execute-action?name=left-half`.
 - Autostart über den Run-Schlüssel der Registry.
 - Konfiguration als JSON unter `%APPDATA%\WinTangle\config.json`.
+- Setup-Exe (Inno Setup, Installation pro Benutzer ohne Administratorrechte)
+  neben dem portablen ZIP.
+- Automatische Update-Prüfung über WinSparkle, einmal täglich, abschaltbar.
 
 ### Bekannte Grenzen
 
@@ -39,6 +42,8 @@ Bildschirmrand, nach dem Vorbild von Rectangle für macOS.
   WinTangle selbst erhöht läuft (UIPI).
 - Virtuelle Desktops werden nicht umgeschaltet.
 - Die Exe ist nicht signiert; SmartScreen meldet sich beim ersten Start.
+- Der mingw-Cross-Build enthält keine Update-Prüfung, weil WinSparkle nur
+  MSVC-Binärdateien ausliefert.
 
 [Unreleased]: https://github.com/kirkanos/winTangle/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/kirkanos/winTangle/releases/tag/v0.1.0
