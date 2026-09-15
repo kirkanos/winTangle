@@ -3,7 +3,7 @@
 #include <psapi.h>
 
 #include <algorithm>
-#include <cctype>
+#include <cwctype>
 
 namespace wintangle {
 namespace {

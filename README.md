@@ -14,11 +14,13 @@ Natives C++/Win32, keine Runtime-Abhängigkeit, eine einzelne Exe.
 | Berechnungskern (alle 58 Aktionen, Zyklus, Abstände, Layouts, Historie) | fertig, 48 Unit-Tests grün |
 | Konfiguration (JSON, Shortcut-Parser, Import/Export) | fertig, getestet |
 | URL-Schema `wintangle://` inkl. Parser | fertig, Parser getestet |
-| Win32-Schicht (Fenster, Monitore, Hotkeys, Tray, Drag-Snap, Einstellungen) | geschrieben, **auf Windows noch nicht kompiliert/getestet** |
+| Win32-Schicht (Fenster, Monitore, Hotkeys, Tray, Drag-Snap, Einstellungen) | kompiliert warnungsfrei (mingw-w64 Cross-Build), **auf echtem Windows noch nicht ausgeführt** |
 
-Entwickelt wird auf macOS, deshalb läuft dort nur der plattformfreie Teil.
-Der Windows-Build passiert über die GitHub-Action `windows` oder lokal (siehe
-unten) und ist der nächste offene Schritt.
+Entwickelt wird auf macOS. Der Kern läuft und wird dort getestet, die
+Win32-Schicht wird per mingw-w64 gegengebaut — das fängt Compile- und
+Linkfehler, sagt aber nichts über das Laufzeitverhalten. Offen ist damit
+genau ein Schritt: die Exe auf einem Windows-Rechner starten und die
+Testmatrix unten durchgehen.
 
 ## Bauen
 
@@ -35,6 +37,17 @@ macOS/Linux (nur Kern und Tests):
 ```
 cmake -S . -B build && cmake --build build && ctest --test-dir build
 ```
+
+Cross-Build der kompletten App auf macOS (`brew install mingw-w64`), zum
+Prüfen der Win32-Schicht ohne Windows-Rechner:
+
+```
+cmake -S . -B build-win -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-w64.cmake
+cmake --build build-win -j
+```
+
+Die dabei entstehende Exe hängt an `libstdc++`/`libgcc` und ist nur zur
+Verifikation gedacht; ausgeliefert wird der statisch gelinkte MSVC-Build.
 
 ## Standardbelegung
 
@@ -102,6 +115,19 @@ src/ui/        Einstellungsfenster
 Der Kern rechnet ausschließlich mit `Rect` und kennt kein `HWND`. Jede Aktion
 ist eine reine Funktion `(Fenster, Arbeitsfläche, Wiederholung) → Rect`;
 Hotkey, Tray-Menü, URL-Aufruf und Drag-Snap laufen alle durch denselben Pfad.
+
+## Was auf Windows noch zu prüfen ist
+
+1. Einzelmonitor bei 100 % — alle Tastenkombinationen.
+2. Zwei Monitore mit 100 % und 150 % und unterschiedlicher Auflösung —
+   Positionen exakt, kein Versatz beim Wechsel.
+3. Taskleiste links/oben/automatisch ausblenden — `rcWork` wird respektiert.
+4. Maximiertes Fenster → Hälfte → Wiederherstellen.
+5. Fenster mit Mindestgröße (Windows-Terminal-Einstellungen) — keine
+   Überlappung, Zykluskette bleibt intakt.
+6. Erhöhtes Fenster (Task-Manager) — einmalige Meldung statt stillem Nichtstun.
+7. Chrome, VS Code (Electron), eine WinUI-App, eine alte Win32-App — Electron
+   und WinUI sind die üblichen Ausreißer bei Schatten und DPI.
 
 ## Bekannte Grenzen
 

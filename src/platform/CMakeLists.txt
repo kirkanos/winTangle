@@ -35,6 +35,13 @@ target_link_libraries(wintangle PRIVATE
 target_include_directories(wintangle PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_compile_definitions(wintangle PRIVATE UNICODE _UNICODE)
 
+if(MINGW)
+    # Ohne -municode sucht der Linker main() statt wWinMain(). Der
+    # mingw-Build dient nur der Verifikation waehrend der Entwicklung.
+    target_compile_options(wintangle PRIVATE -municode -Wall -Wextra)
+    target_link_options(wintangle PRIVATE -municode -mwindows)
+endif()
+
 if(MSVC)
     target_compile_options(wintangle PRIVATE /W4 /permissive- /utf-8)
     # Einzelne, statisch gelinkte Exe -- kein VC-Redistributable noetig.
