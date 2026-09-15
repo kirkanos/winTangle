@@ -1,0 +1,30 @@
+#include <windows.h>
+
+APPICON ICON "wintangle.ico"
+
+// Das Manifest wird fest einkompiliert, damit die Exe einzeln lauffaehig ist.
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "wintangle.manifest"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 0, 1, 0, 0
+PRODUCTVERSION 0, 1, 0, 0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040704b0"
+        BEGIN
+            VALUE "FileDescription", "WinTangle - Fensteranordnung"
+            VALUE "FileVersion", "0.1.0.0"
+            VALUE "InternalName", "wintangle"
+            VALUE "OriginalFilename", "wintangle.exe"
+            VALUE "ProductName", "WinTangle"
+            VALUE "ProductVersion", "0.1.0.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x407, 1200
+    END
+END

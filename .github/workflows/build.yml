@@ -1,0 +1,28 @@
+name: build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  # Der Berechnungskern ist plattformfrei und wird deshalb auch dort gebaut,
+  # wo entwickelt wird -- so faellt ein Geometriefehler sofort auf.
+  core:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+      - run: cmake --build build -j
+      - run: ctest --test-dir build --output-on-failure
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build -A x64
+      - run: cmake --build build --config Release -j
+      - run: ctest --test-dir build -C Release --output-on-failure
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wintangle-x64
+          path: build/src/platform/Release/wintangle.exe
