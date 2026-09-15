@@ -35,6 +35,10 @@ Bildschirmrand, nach dem Vorbild von Rectangle für macOS.
 - Setup-Exe (Inno Setup, Installation pro Benutzer ohne Administratorrechte)
   neben dem portablen ZIP.
 - Automatische Update-Prüfung über WinSparkle, einmal täglich, abschaltbar.
+- Rückstandsfreies Entfernen: Das Setup fragt beim Deinstallieren, ob auch
+  Einstellungen, Autostart, URL-Protokoll und Update-Zustand verschwinden
+  sollen, und schaltet das Windows-eigene Andocken wieder ein. Portable
+  Nutzer erreichen dasselbe über `wintangle.exe --cleanup`.
 
 ### Bekannte Grenzen
 

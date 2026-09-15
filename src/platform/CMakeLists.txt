@@ -19,6 +19,7 @@ add_executable(wintangle WIN32
     WindowList.cpp
     WindowRef.cpp
     ../app/Autostart.cpp
+    ../app/Cleanup.cpp
     ../app/HotkeyManager.cpp
     ../app/Paths.cpp
     ../app/TrayIcon.cpp

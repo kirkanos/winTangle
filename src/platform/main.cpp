@@ -14,11 +14,13 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include "Executor.h"
 #include "ScreenInfo.h"
 #include "Win32.h"
 #include "app/Autostart.h"
+#include "app/Cleanup.h"
 #include "app/Commands.h"
 #include "app/HotkeyManager.h"
 #include "app/Paths.h"
@@ -334,6 +336,50 @@ void App::ShowAbout() {
 }  // namespace
 }  // namespace wintangle
 
+namespace wintangle {
+namespace {
+
+// "--cleanup" entfernt alle Spuren und beendet sich wieder. Wird vom
+// Uninstaller aufgerufen und steht portablen Nutzern zur Verfuegung, die kein
+// Setup haben. Mit "--silent" ohne Rueckfrage und ohne Meldung.
+int RunCleanup(bool silent, bool appRunning) {
+    if (appRunning && !silent) {
+        MessageBoxW(nullptr,
+                    L"WinTangle läuft noch. Bitte erst über das Symbol im "
+                    L"Infobereich beenden und dann erneut aufrufen.",
+                    L"WinTangle aufräumen", MB_ICONWARNING | MB_OK);
+        return 1;
+    }
+    if (!silent) {
+        const int answer = MessageBoxW(
+            nullptr,
+            L"Alle Spuren von WinTangle entfernen?\n\n"
+            L"• Einstellungen und Tastenbelegung\n"
+            L"• Autostart-Eintrag\n"
+            L"• URL-Protokoll wintangle://\n"
+            L"• gespeicherter Update-Zustand\n\n"
+            L"Das Windows-eigene Andocken wird wieder eingeschaltet, falls "
+            L"WinTangle es abgeschaltet hat. Das Programm selbst wird dabei "
+            L"nicht gelöscht.",
+            L"WinTangle aufräumen", MB_ICONQUESTION | MB_YESNO | MB_DEFBUTTON2);
+        if (answer != IDYES) return 0;
+    }
+
+    const CleanupReport report = RemoveAllTraces();
+    if (!silent) {
+        MessageBoxW(nullptr, FormatCleanupReport(report).c_str(), L"WinTangle aufgeräumt",
+                    report.failed.empty() ? MB_ICONINFORMATION | MB_OK : MB_ICONWARNING | MB_OK);
+    }
+    return report.failed.empty() ? 0 : 1;
+}
+
+bool HasFlag(std::wstring_view args, std::wstring_view flag) {
+    return args.find(flag) != std::wstring_view::npos;
+}
+
+}  // namespace
+}  // namespace wintangle
+
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int) {
     using namespace wintangle;
 
@@ -342,7 +388,15 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int) {
     HANDLE mutex = CreateMutexW(nullptr, TRUE, kMutexName);
     const bool alreadyRunning = mutex && GetLastError() == ERROR_ALREADY_EXISTS;
 
-    const std::string args = Narrow(commandLine ? commandLine : L"");
+    const std::wstring wideArgs = commandLine ? commandLine : L"";
+    const std::string args = Narrow(wideArgs);
+
+    if (HasFlag(wideArgs, L"--cleanup")) {
+        const int code = RunCleanup(HasFlag(wideArgs, L"--silent"), alreadyRunning);
+        if (mutex) CloseHandle(mutex);
+        return code;
+    }
+
     if (alreadyRunning) {
         if (!ParseExecuteActionUri(args).empty()) {
             SendUriToRunningInstance(args);

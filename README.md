@@ -68,6 +68,36 @@ Nichts davon ist signiert, SmartScreen meldet sich also beim ersten Start
 („Weitere Informationen" → „Trotzdem ausführen"). Die Prüfsummen jedes
 Releases stehen auf der Release-Seite.
 
+## Restlos entfernen
+
+Beim Deinstallieren fragt das Setup, ob auch die persönlichen Daten weg
+sollen. Vorbelegt ist **Nein** — wer nur auf eine neue Fassung wechselt, soll
+seine Tastenbelegung behalten. Mit **Ja** bleibt nichts zurück.
+
+Für die portable Fassung, die keinen Uninstaller hat, gibt es denselben Weg
+von Hand:
+
+```
+wintangle.exe --cleanup
+```
+
+Entfernt wird in beiden Fällen:
+
+| Spur | Ort |
+|---|---|
+| Einstellungen | `%APPDATA%\WinTangle\` |
+| Autostart | `HKCU\…\CurrentVersion\Run` |
+| URL-Protokoll | `HKCU\Software\Classes\wintangle` |
+| Update-Zustand | `HKCU\Software\WinTangle` |
+| Windows-Andocken | `SPI_SETWINARRANGING` wird wieder eingeschaltet |
+
+Der letzte Punkt ist der leicht zu übersehende: das ist eine
+Windows-Einstellung, die WinTangle verändert haben kann, und sie bliebe sonst
+nach der Deinstallation abgeschaltet zurück.
+
+WinTangle schreibt ausschließlich unter `HKEY_CURRENT_USER` und ins
+Benutzerprofil — nichts davon ist systemweit, nichts braucht Administratorrechte.
+
 ## Updates
 
 Die installierte Fassung prüft einmal täglich, ob es eine neue Version gibt,
