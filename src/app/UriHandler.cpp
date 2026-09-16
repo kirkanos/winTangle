@@ -122,8 +122,24 @@ bool SendUriToRunningInstance(const std::string& uri) {
     return ok && written == uri.size();
 }
 
+// Reads a string value; empty when it is missing.
+std::wstring ReadRegString(HKEY root, const wchar_t* subkey, const wchar_t* name) {
+    wchar_t buffer[1024]{};
+    DWORD size = sizeof(buffer);
+    DWORD type = 0;
+    if (RegGetValueW(root, subkey, name, RRF_RT_REG_SZ, &type, buffer, &size) != ERROR_SUCCESS) {
+        return {};
+    }
+    return buffer;
+}
+
 bool RegisterUriScheme() {
     const std::wstring command = L"\"" + ExecutablePath() + L"\" \"%1\"";
+
+    // Already registered and pointing at this executable: leave the registry
+    // alone. Rewriting it on every start is needless, and a program that keeps
+    // rewriting registry keys looks worse to a scanner than it deserves.
+    if (ReadRegString(HKEY_CURRENT_USER, kSchemeCommandKey, nullptr) == command) return true;
     bool ok = WriteRegString(HKEY_CURRENT_USER, kSchemeKey, nullptr, L"URL:WinTangle Protocol");
     ok = WriteRegString(HKEY_CURRENT_USER, kSchemeKey, L"URL Protocol", L"") && ok;
     ok = WriteRegString(HKEY_CURRENT_USER, kSchemeCommandKey, nullptr, command) && ok;

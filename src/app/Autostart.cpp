@@ -26,6 +26,11 @@ bool IsAutostartEnabled() {
 }
 
 bool SetAutostartEnabled(bool enabled) {
+    // Nothing to do is the common case -- writing a Run key on every single
+    // start is pointless churn, and repeatedly rewriting an autostart entry is
+    // one of the behaviours heuristic scanners weigh most heavily.
+    if (IsAutostartEnabled() == enabled) return true;
+
     HKEY key = nullptr;
     if (RegCreateKeyExW(HKEY_CURRENT_USER, kRunKey, 0, nullptr, 0, KEY_SET_VALUE, nullptr, &key,
                         nullptr) != ERROR_SUCCESS) {

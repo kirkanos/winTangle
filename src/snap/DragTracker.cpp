@@ -35,6 +35,15 @@ bool DragTracker::Start() {
     return hook_ != nullptr;
 }
 
+void DragTracker::SyncWithConfig(const Config& config) {
+    config_ = &config;
+    if (config.snapAreasEnabled) {
+        Start();
+    } else {
+        Stop();
+    }
+}
+
 void DragTracker::Stop() {
     if (hook_) {
         UnhookWinEvent(hook_);

@@ -29,10 +29,17 @@ public:
     DragTracker(const DragTracker&) = delete;
     DragTracker& operator=(const DragTracker&) = delete;
 
+    // Installs the system-wide hook. Only call this when snap areas are
+    // actually enabled -- see SyncWithConfig().
     bool Start();
     void Stop();
 
-    void SetConfig(const Config& config) { config_ = &config; }
+    // Installs or removes the hook to match the configuration. Hooking the
+    // whole session while the feature is switched off would be both wasteful
+    // and hard to distinguish from spyware for a behavioural virus scanner.
+    void SyncWithConfig(const Config& config);
+
+    bool IsRunning() const { return hook_ != nullptr; }
 
     // From the host window procedure's WM_TIMER.
     void OnTimer(UINT_PTR timerId);

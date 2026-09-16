@@ -115,8 +115,8 @@ void App::ApplyConfig() {
     SetLanguage(config_.language.value_or(DetectUiLanguage()));
 
     if (executor_) executor_->SetConfig(config_);
+    if (dragTracker_) dragTracker_->SyncWithConfig(config_);
     updater_.SetAutomaticChecks(config_.automaticUpdates);
-    if (dragTracker_) dragTracker_->SetConfig(config_);
     if (settings_) settings_->UpdateConfig(config_);
 
     const auto conflicts = hotkeys_->Apply(config_);
@@ -168,7 +168,8 @@ bool App::Initialize() {
         hwnd_, instance_, config_, [this](HWND hwnd, Action action, const Rect& frame) {
             ReportResult(action, executor_->ApplyFrame(hwnd, action, frame));
         });
-    dragTracker_->Start();
+    // The hook itself is installed by ApplyConfig() below, and only when snap
+    // areas are enabled.
 
     settings_ = std::make_unique<SettingsWindow>(instance_, config_, [this](const Config& updated) {
         config_ = updated;

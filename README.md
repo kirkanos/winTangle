@@ -240,6 +240,32 @@ URL call and drag-snap all run through the same path.
    WinUI are the usual outliers for shadows and DPI.
 8. Install, update and uninstall including the cleanup prompt.
 
+## Virus scanners
+
+Heuristic scanners — AVG and Avast in particular, as `IDP.Generic` — sometimes
+flag `wintangle.exe`. The reason is the API profile a window manager cannot
+avoid: global hotkeys (`RegisterHotKey`), a system-wide event hook for
+drag-snapping (`SetWinEventHook`), enumerating windows of other processes and
+moving them (`EnumWindows`, `SetWindowPos`), plus a Run key for autostart. Read
+as behaviour alone, that is indistinguishable from a keylogger; combined with an
+unsigned binary that nobody has downloaded yet, a heuristic errs on the side of
+shouting.
+
+What the program does about it:
+
+- the system-wide hook is installed only while snap areas are actually enabled,
+  not unconditionally at startup,
+- the Run key and the URL protocol are written only when they are missing or
+  wrong, not on every start,
+- the executable carries full version information, so its origin is visible in
+  the file properties.
+
+What you can do about it: check the hash from the release page against
+VirusTotal — a single engine objecting while seventy others do not is the
+signature of a false positive — and report it to the vendor if you want it
+fixed for everyone. The lasting fix is a code signing certificate, which this
+project does not have yet.
+
 ## Known limits
 
 * **Windows of elevated processes** (Task Manager, programs started as
