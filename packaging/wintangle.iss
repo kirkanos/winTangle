@@ -68,6 +68,8 @@ Name: "german"; MessagesFile: "compiler:Languages\German.isl"
 [CustomMessages]
 english.RemoveSettingsPrompt=Remove WinTangle's personal data as well?%n%n• settings and key bindings%n• stored update state%n%nWindows' own snapping will be switched back on if WinTangle turned it off.%n%nChoosing No keeps your settings for a later installation.
 german.RemoveSettingsPrompt=Sollen auch die persönlichen Daten von WinTangle entfernt werden?%n%n• Einstellungen und Tastenbelegung%n• gespeicherter Update-Zustand%n%nDas Windows-eigene Andocken wird dabei wieder eingeschaltet, falls WinTangle es abgeschaltet hat.%n%nBei Nein bleiben die Einstellungen für eine spätere Installation erhalten.
+english.StillRunning=WinTangle is still running and did not close. Quit it from the notification area icon and run the setup again.
+german.StillRunning=WinTangle läuft noch und hat sich nicht beendet. Bitte über das Symbol im Infobereich beenden und das Setup erneut starten.
 
 [Tasks]
 Name: "autostart"; Description: "{cm:AutoStartProgram,{#AppName}}"; GroupDescription: "{cm:AdditionalIcons}"
@@ -109,11 +111,6 @@ Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; \
 ; to remove therefore lives in exactly one place (src/app/Cleanup.cpp) and is
 ; not duplicated in this script.
 ; Runs before the files are deleted, while the executable is still there.
-; Quit a running copy first, for the same reason as in PrepareToInstall:
-; otherwise the uninstaller cannot delete the executable.
-Filename: "{app}\{#AppExe}"; Parameters: "--quit"; \
-    Flags: runhidden waituntilterminated; RunOnceId: "wintangle-quit"
-
 Filename: "{app}\{#AppExe}"; Parameters: "--cleanup --silent"; \
     Flags: runhidden waituntilterminated; RunOnceId: "wintangle-cleanup"; \
     Check: ShouldRemoveSettings
@@ -122,14 +119,59 @@ Filename: "{app}\{#AppExe}"; Parameters: "--cleanup --silent"; \
 Type: dirifempty; Name: "{userappdata}\WinTangle"
 
 [Code]
+const
+  // Parent handle that FindWindowEx needs to see message-only windows, which
+  // is the only kind WinTangle has.
+  HWND_MESSAGE_PARENT = -3;
+  WM_CLOSE_MESSAGE = $0010;
+
+function FindWindowExW(Parent, ChildAfter: Longint; ClassName: String;
+  WindowName: Longint): Longint;
+  external 'FindWindowExW@user32.dll stdcall';
+function PostMessageW(Wnd: Longint; Msg: Cardinal; WParam, LParam: Longint): Boolean;
+  external 'PostMessageW@user32.dll stdcall';
+function IsWindowVisibleHandle(Wnd: Longint): Boolean;
+  external 'IsWindow@user32.dll stdcall';
+
 var
   RemoveSettings: Boolean;
+
+// Closes a running WinTangle and waits for it to be gone.
+//
+// This talks to the window directly instead of running the installed
+// executable with a flag: the copy on disk is the OLD version, which need not
+// understand any flag we invent. An older build handed "--quit" would simply
+// start the program -- locking the very file the installer is about to
+// replace, which is exactly the failure this is meant to prevent.
+function QuitRunningWinTangle(): Boolean;
+var
+  Wnd: Longint;
+  Waited: Integer;
+begin
+  Wnd := FindWindowExW(HWND_MESSAGE_PARENT, 0, 'WinTangleMessageWindow', 0);
+  if Wnd = 0 then
+  begin
+    Result := True;
+    exit;
+  end;
+
+  PostMessageW(Wnd, WM_CLOSE_MESSAGE, 0, 0);
+
+  Waited := 0;
+  while (Waited < 5000) and IsWindowVisibleHandle(Wnd) do
+  begin
+    Sleep(100);
+    Waited := Waited + 100;
+  end;
+  Result := not IsWindowVisibleHandle(Wnd);
+end;
 
 // Ask during uninstall whether the personal data should go as well. The
 // default is "No": somebody merely moving to a new version should not lose
 // their key bindings. A silent uninstall takes that default too.
 function InitializeUninstall(): Boolean;
 begin
+  QuitRunningWinTangle();
   RemoveSettings := SuppressibleMsgBox(
     ExpandConstant('{cm:RemoveSettingsPrompt}'),
     mbConfirmation, MB_YESNO, IDNO) = IDYES;
@@ -141,17 +183,14 @@ end;
 // executable locked and the install would fail with "MoveFile failed; code 5".
 // Ask it to quit itself instead.
 function PrepareToInstall(var NeedsRestart: Boolean): String;
-var
-  Exe: String;
-  ResultCode: Integer;
 begin
-  Result := '';
   NeedsRestart := False;
-  Exe := ExpandConstant('{app}\{#AppExe}');
-  if FileExists(Exe) then
-  begin
-    Exec(Exe, '--quit', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  end;
+  if QuitRunningWinTangle() then
+    Result := ''
+  else
+    // A named cause beats the installer's own "error renaming a file in the
+    // destination directory" further down the line.
+    Result := ExpandConstant('{cm:StillRunning}');
 end;
 
 function ShouldRemoveSettings(): Boolean;
