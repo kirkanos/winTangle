@@ -14,13 +14,12 @@ Native C++/Win32, no runtime dependency, a single executable.
 | Calculation core (all 58 actions, cycling, gaps, layouts, history) | done, 55 unit tests green |
 | Configuration (JSON, shortcut parser, import/export) | done, tested |
 | URL scheme `wintangle://` including its parser | done, parser tested |
-| Win32 layer (windows, displays, hotkeys, tray, drag-snap, settings) | compiles warning free (mingw-w64 cross build), **never yet run on real Windows** |
+| Win32 layer (windows, displays, hotkeys, tray, drag-snap, settings) | runs on Windows; keyboard shortcuts and drag-snap confirmed working, the rest of the test matrix below still open |
 
 Development happens on macOS. The core runs and is tested there, the Win32
 layer is cross-built locally with mingw-w64 — that catches compile and link
-errors but says nothing about runtime behaviour. The MSVC build in CI is what
-counts. Exactly one step is therefore still open: start the executable on a
-Windows machine and work through the test matrix below.
+errors but says nothing about runtime behaviour, which is what the MSVC build
+in CI and testing on a real machine are for.
 
 ## Installation
 
@@ -247,6 +246,9 @@ URL call and drag-snap all run through the same path.
    WinUI are the usual outliers for shadows and DPI.
 8. Install, update and uninstall including the cleanup prompt.
 
+Confirmed so far on a real machine: keyboard shortcuts move windows, and
+dragging to a screen edge snaps.
+
 ## Virus scanners
 
 Heuristic scanners — AVG and Avast in particular, as `IDP.Generic` — sometimes
@@ -267,9 +269,20 @@ What the program does about it:
 - the executable carries full version information, so its origin is visible in
   the file properties.
 
-What you can do about it: check the hash from the release page against
-VirusTotal — a single engine objecting while seventy others do not is the
-signature of a false positive — and report it to the vendor if you want it
+A scanner does not stop at complaining. AVG has been observed to hold the
+freshly written file open during installation, which makes the setup fail with
+*"an error occurred while trying to rename a file in the destination
+directory"* — the file being renamed is `wintangle.exe` itself. If that
+happens:
+
+- add an exclusion for the installation directory
+  (`%LOCALAPPDATA%\Programs\WinTangle`) and for the setup executable, or
+- click Retry in the error dialog, which often succeeds once the scanner has
+  let go.
+
+What you can do about the warning itself: check the hash from the release page
+against VirusTotal — a single engine objecting while seventy others do not is
+the signature of a false positive — and report it to the vendor if you want it
 fixed for everyone. The lasting fix is a code signing certificate, which this
 project does not have yet.
 
