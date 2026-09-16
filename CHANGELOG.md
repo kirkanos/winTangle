@@ -11,6 +11,16 @@ automatically — creating a tag reads it out of this file.
 
 ### Fixed
 
+- Aero Snap stayed switched off, which also disables Win+arrow, and quitting or
+  uninstalling WinTangle did not bring it back. `SPI_SETWINARRANGING` takes the
+  value in `uiParam` on a real machine, not in `pvParam` as documented — so
+  every earlier version, including the rc3 repair meant to undo the damage,
+  switched the feature off while believing it was switching it on. The setter
+  now tries the parameter combinations in turn and reads the result back after
+  each, and the repair runs again on machines rc3 and rc4 left broken. If it
+  still cannot be switched on, WinTangle says where to do it by hand instead of
+  recording a repair that never happened.
+
 - In the settings window, the language picker sat on top of the "turn off
   Windows' own snapping" checkbox. The control positions now live in
   `src/ui/SettingsLayout.h` as data, and a test checks that none of them

@@ -41,6 +41,7 @@ enum class Str {
     MsgWindowNotMovableTitle, MsgWindowNotMovableText,
     MsgUnknownCallTitle, MsgAlreadyRunning, MsgStartFailed,
     MsgUpdatesDisabled, MsgSnapHookFailedTitle, MsgSnapHookFailedText,
+    MsgAeroSnapBrokenTitle, MsgAeroSnapBrokenText,
 
     // About box
     AboutTitle, AboutDescription, AboutUrlHint, AboutVersion, AboutCopyright, AboutLicense,

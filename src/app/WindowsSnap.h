@@ -27,10 +27,14 @@ bool IsWindowArrangingEnabled();
 // completely alone.
 void ApplyWindowArrangingPreference(bool disableRequested);
 
-// One-time repair for machines that ran 0.1.0-rc1 or rc2. Those forced the
-// setting on every start instead of leaving it alone, so they could switch off
-// Aero Snap for users who never asked. Turns it back on exactly once, recorded
-// so it never overrules a later decision by the user.
-void RepairWindowArrangingIfDamagedByOldVersion(bool disableRequested);
+// One-time repair for machines left with Aero Snap switched off by an earlier
+// version. rc1 and rc2 forced the setting on every start; rc3 and rc4 tried to
+// undo that but called the setter the same wrong way and switched it off
+// again.
+//
+// Returns false when the setting could not be turned back on -- in that case
+// nothing is recorded and the next start tries again, and the user is told
+// where to fix it by hand.
+bool RepairWindowArrangingIfDamagedByOldVersion(bool disableRequested);
 
 }  // namespace wintangle

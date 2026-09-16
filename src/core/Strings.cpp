@@ -99,6 +99,18 @@ constexpr std::array<Entry, static_cast<size_t>(Str::Count_)> kStrings{{
      "Meist liegt das an Sicherheitssoftware. Die Tastenkürzel sind davon nicht "
      "betroffen."},
 
+    {Str::MsgAeroSnapBrokenTitle, "Windows snapping is switched off",
+     "Windows-Andocken ist abgeschaltet"},
+    {Str::MsgAeroSnapBrokenText,
+     "An earlier version of WinTangle switched off Windows' own window snapping, "
+     "which also disables Win+arrow. It could not be switched back on "
+     "automatically. Turn it on under Settings > System > Multitasking > "
+     "\"Snap windows\".",
+     "Eine frühere Fassung von WinTangle hat das Windows-eigene Andocken "
+     "abgeschaltet, was auch Win+Pfeil deaktiviert. Es ließ sich nicht "
+     "automatisch wieder einschalten. Bitte unter Einstellungen > System > "
+     "Multitasking > \"Fenster andocken\" einschalten."},
+
     {Str::AboutTitle, "About WinTangle", "Über WinTangle"},
     {Str::AboutDescription,
      "Window arrangement by keyboard and by dragging,\nmodelled on Rectangle for macOS.",

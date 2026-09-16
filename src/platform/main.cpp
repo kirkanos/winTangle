@@ -78,6 +78,7 @@ private:
     // from appearing on every single key press.
     bool accessDeniedReported_ = false;
     bool snapHookFailureReported_ = false;
+    bool aeroSnapRepairFailed_ = false;
 };
 
 void App::LoadConfig() {
@@ -149,9 +150,10 @@ void App::ApplyConfig() {
 bool App::Initialize() {
     LoadConfig();
 
-    // 0.1.0-rc1 and rc2 forced this setting on every start and could leave
-    // Aero Snap switched off for users who never asked. Undo that once.
-    RepairWindowArrangingIfDamagedByOldVersion(config_.disableWindowsSnap);
+    // Earlier versions could leave Aero Snap switched off for users who never
+    // asked. Undo that once; if it cannot be undone, say so after the tray icon
+    // exists.
+    aeroSnapRepairFailed_ = !RepairWindowArrangingIfDamagedByOldVersion(config_.disableWindowsSnap);
 
     WNDCLASSEXW wc{};
     wc.cbSize = sizeof(wc);
@@ -192,6 +194,10 @@ bool App::Initialize() {
     // Only start WinSparkle once the configuration is in place -- the switch
     // for automatic checks goes straight to the library.
     updater_.Initialize(Widen(WINTANGLE_VERSION), config_.automaticUpdates);
+
+    if (aeroSnapRepairFailed_ && tray_) {
+        tray_->ShowBalloon(T(Str::MsgAeroSnapBrokenTitle), T(Str::MsgAeroSnapBrokenText), true);
+    }
 
     uriServer_.Start(hwnd_);
     RegisterUriScheme();

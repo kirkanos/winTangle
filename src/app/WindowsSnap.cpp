@@ -11,6 +11,11 @@ constexpr wchar_t kStateKey[] = L"Software\\WinTangle";
 constexpr wchar_t kPreviousValue[] = L"WindowArrangingBefore";
 constexpr wchar_t kRepairDone[] = L"WindowArrangingRepaired";
 
+// Bumped whenever a released version turned out to leave the setting broken,
+// so affected machines get one more attempt. 1 was written by 0.1.0-rc3 and
+// rc4, whose repair called the setter the same wrong way that broke it.
+constexpr DWORD kRepairVersion = 2;
+
 bool ReadDword(const wchar_t* name, DWORD& out) {
     DWORD size = sizeof(out);
     DWORD type = 0;
@@ -39,17 +44,36 @@ void DeleteValue(const wchar_t* name) {
     RegCloseKey(key);
 }
 
-// SPI_SETWINARRANGING takes the value in pvParam, uiParam stays zero.
-// SPIF_UPDATEINIFILE makes the change outlast the session, which matters both
-// ways: switching off has to stick, and so does putting it back.
+// Switches Windows' window arranging on or off, and makes sure it took.
+//
+// The documentation says the value goes in pvParam and uiParam stays zero.
+// That is not what happens on a real machine: earlier versions passed
+// pvParam = TRUE with uiParam = 0 and the feature ended up switched OFF, which
+// is how users lost Aero Snap and Win+arrow. The value that took effect was
+// the one in uiParam.
+//
+// Rather than bet on either reading, the combinations are tried in turn and
+// the result is read back after each. SPIF_UPDATEINIFILE makes the change
+// outlast the session -- which matters in both directions.
 bool SetWindowArranging(bool enabled) {
     const UINT_PTR value = enabled ? TRUE : FALSE;
-    SystemParametersInfoW(SPI_SETWINARRANGING, 0, reinterpret_cast<void*>(value),
-                          SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
-    // Read back rather than trust the return value: this is a user visible
-    // system setting, and failing silently is how it got broken in the first
-    // place.
-    return IsWindowArrangingEnabled() == enabled;
+
+    struct Attempt {
+        UINT uiParam;
+        void* pvParam;
+    };
+    const Attempt attempts[] = {
+        {static_cast<UINT>(value), reinterpret_cast<void*>(value)},  // both, the safe bet
+        {static_cast<UINT>(value), nullptr},                         // value in uiParam only
+        {0, reinterpret_cast<void*>(value)},                         // as documented
+    };
+
+    for (const Attempt& attempt : attempts) {
+        SystemParametersInfoW(SPI_SETWINARRANGING, attempt.uiParam, attempt.pvParam,
+                              SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
+        if (IsWindowArrangingEnabled() == enabled) return true;
+    }
+    return false;
 }
 
 }  // namespace
@@ -77,18 +101,24 @@ void ApplyWindowArrangingPreference(bool disableRequested) {
     DeleteValue(kPreviousValue);
 }
 
-void RepairWindowArrangingIfDamagedByOldVersion(bool disableRequested) {
-    // Only for users who do not want it switched off, and only once.
-    if (disableRequested) return;
+bool RepairWindowArrangingIfDamagedByOldVersion(bool disableRequested) {
+    // Only for users who do not want it switched off, and only once per repair
+    // version.
+    if (disableRequested) return true;
 
     DWORD done = 0;
-    if (ReadDword(kRepairDone, done) && done != 0) return;
+    if (ReadDword(kRepairDone, done) && done >= kRepairVersion) return true;
 
     DWORD previous = 0;
-    if (ReadDword(kPreviousValue, previous)) return;  // handled by the normal path
+    if (ReadDword(kPreviousValue, previous)) return true;  // handled by the normal path
 
-    if (!IsWindowArrangingEnabled()) SetWindowArranging(true);
-    WriteDword(kRepairDone, 1u);
+    bool repaired = true;
+    if (!IsWindowArrangingEnabled()) repaired = SetWindowArranging(true);
+
+    // Only record the repair when it actually worked. A failed attempt should
+    // be retried on the next start rather than written off.
+    if (repaired) WriteDword(kRepairDone, kRepairVersion);
+    return repaired;
 }
 
 }  // namespace wintangle
