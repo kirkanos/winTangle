@@ -246,8 +246,12 @@ URL call and drag-snap all run through the same path.
    WinUI are the usual outliers for shadows and DPI.
 8. Install, update and uninstall including the cleanup prompt.
 
-Confirmed so far on a real machine: keyboard shortcuts move windows, and
-dragging to a screen edge snaps.
+Confirmed so far on a real machine: keyboard shortcuts move windows, dragging
+to a screen edge snaps, and Windows' own snapping survives quitting and
+uninstalling WinTangle.
+
+Still open, and the most likely place for a real defect: two displays at
+different scaling.
 
 ## Virus scanners
 
