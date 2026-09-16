@@ -29,14 +29,19 @@ jobs:
         run: |
           tag="${GITHUB_REF_NAME}"
           version="${tag#v}"
+          # A pre-release tag carries a suffix (0.1.0-rc1). Only the numeric
+          # part can be compared against CMakeLists.txt, and only that part is
+          # a valid Windows file version.
+          base="${version%%-*}"
           cmake_version=$(grep -oE 'project\(WinTangle VERSION [0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt \
                           | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
-          if [ "$version" != "$cmake_version" ]; then
+          if [ "$base" != "$cmake_version" ]; then
             echo "::error::Tag $tag does not match version $cmake_version in CMakeLists.txt"
             exit 1
           fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
 
       - name: Build
         run: |
@@ -74,7 +79,11 @@ jobs:
         id: installer
         run: |
           version="${{ steps.version.outputs.version }}"
-          "$ISCC" //DAppVersion="${version}" packaging/wintangle.iss
+          # The numeric version goes into the file properties, the full one
+          # (including any -rc suffix) into the file name and the title.
+          "$ISCC" //DAppVersion="${{ steps.version.outputs.base }}" \
+                  //DAppVersionFull="${version}" \
+                  packaging/wintangle.iss
           ls -l dist/
           echo "name=wintangle-${version}-setup.exe" >> "$GITHUB_OUTPUT"
 
@@ -106,21 +115,24 @@ jobs:
         run: |
           version="${{ steps.version.outputs.version }}"
           tag="${{ steps.version.outputs.tag }}"
+          # The changelog is keyed by the release version, so a pre-release
+          # shows the section of the version it is a candidate for.
+          changelog_version="${{ steps.version.outputs.base }}"
           previous=$(git describe --tags --abbrev=0 "${tag}^" 2>/dev/null || true)
 
           {
-            if awk -v v="$version" '
+            if awk -v v="$changelog_version" '
                  $0 ~ "^## \\[" v "\\]" { found=1; next }
                  found && (/^## / || /^\[[^]]+\]: /) { exit }
                  found { print }
                ' CHANGELOG.md | grep -q '[^[:space:]]'; then
-              awk -v v="$version" '
+              awk -v v="$changelog_version" '
                 $0 ~ "^## \\[" v "\\]" { found=1; next }
                 found && (/^## / || /^\[[^]]+\]: /) { exit }
                 found { print }
               ' CHANGELOG.md
             else
-              echo "_No CHANGELOG entry for ${version}._"
+              echo "_No CHANGELOG entry for ${changelog_version}._"
               echo
             fi
 

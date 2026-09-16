@@ -6,8 +6,14 @@
 ;
 ; The version arrives as /DAppVersion=... from the release workflow.
 
+; AppVersion is numeric (0.1.0) and goes into the file properties; Windows
+; rejects anything else there. AppVersionFull may carry a pre-release suffix
+; (0.1.0-rc1) and is what the user sees.
 #ifndef AppVersion
   #define AppVersion "0.0.0"
+#endif
+#ifndef AppVersionFull
+  #define AppVersionFull AppVersion
 #endif
 #ifndef SourceDir
   #define SourceDir "..\build\src\platform\Release"
@@ -21,8 +27,8 @@
 [Setup]
 AppId={{7F4C1E92-3A6D-4B18-9C55-2E8D0A17B3F1}
 AppName={#AppName}
-AppVersion={#AppVersion}
-AppVerName={#AppName} {#AppVersion}
+AppVersion={#AppVersionFull}
+AppVerName={#AppName} {#AppVersionFull}
 AppPublisher={#AppPublisher}
 AppPublisherURL={#AppUrl}
 AppSupportURL={#AppUrl}/issues
@@ -37,7 +43,7 @@ PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 
 OutputDir=..\dist
-OutputBaseFilename=wintangle-{#AppVersion}-setup
+OutputBaseFilename=wintangle-{#AppVersionFull}-setup
 SetupIconFile=..\resources\wintangle.ico
 UninstallDisplayIcon={app}\{#AppExe}
 WizardStyle=modern
