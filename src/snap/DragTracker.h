@@ -37,7 +37,12 @@ public:
     // Installs or removes the hook to match the configuration. Hooking the
     // whole session while the feature is switched off would be both wasteful
     // and hard to distinguish from spyware for a behavioural virus scanner.
-    void SyncWithConfig(const Config& config);
+    //
+    // Returns false when snap areas are enabled but the hook could not be
+    // installed -- which happens when security software blocks it. Silently
+    // doing nothing in that case leaves the user with a feature that simply
+    // never fires and no idea why.
+    bool SyncWithConfig(const Config& config);
 
     bool IsRunning() const { return hook_ != nullptr; }
 

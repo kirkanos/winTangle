@@ -23,6 +23,7 @@ add_executable(wintangle WIN32
     ../app/HotkeyManager.cpp
     ../app/Paths.cpp
     ../app/TrayIcon.cpp
+    ../app/WindowsSnap.cpp
     ../app/Updater.cpp
     ../app/UriHandler.cpp
     ../snap/DragTracker.cpp

@@ -90,6 +90,15 @@ constexpr std::array<Entry, static_cast<size_t>(Str::Count_)> kStrings{{
      "This build was made without update checking.\nNew versions are available at:",
      "Diese Fassung wurde ohne Update-Prüfung gebaut.\nNeue Versionen gibt es unter:"},
 
+    {Str::MsgSnapHookFailedTitle, "Snap areas unavailable",
+     "Snap-Bereiche nicht verfügbar"},
+    {Str::MsgSnapHookFailedText,
+     "Windows refused the hook that detects a window being dragged. Security "
+     "software usually causes this. Keyboard shortcuts are unaffected.",
+     "Windows hat den Hook abgelehnt, der das Ziehen eines Fensters erkennt. "
+     "Meist liegt das an Sicherheitssoftware. Die Tastenkürzel sind davon nicht "
+     "betroffen."},
+
     {Str::AboutTitle, "About WinTangle", "Über WinTangle"},
     {Str::AboutDescription,
      "Window arrangement by keyboard and by dragging,\nmodelled on Rectangle for macOS.",
@@ -105,6 +114,10 @@ constexpr std::array<Entry, static_cast<size_t>(Str::Count_)> kStrings{{
      "Comes with absolutely no warranty. See the LICENSE file.",
      "Freie Software unter der GNU General Public License v3 oder später.\n"
      "Ohne jede Gewährleistung. Einzelheiten in der Datei LICENSE."},
+
+    {Str::AboutSnapAreas, "Snap areas:", "Snap-Bereiche:"},
+    {Str::AboutStateActive, "active", "aktiv"},
+    {Str::AboutStateInactive, "not active", "nicht aktiv"},
 
     {Str::CleanupTitle, "Clean up WinTangle", "WinTangle aufräumen"},
     {Str::CleanupStillRunning,

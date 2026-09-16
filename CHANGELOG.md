@@ -9,6 +9,18 @@ automatically — creating a tag reads it out of this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Windows' own snapping (Aero Snap) was switched off on every start instead of
+  being left alone. The setting is only touched when "Turn off Windows' own
+  snapping" is actually ticked, and the previous value is remembered in
+  `HKCU\Software\WinTangle` so it can be put back — including after a crash.
+  A machine that ran 0.1.0-rc1 or rc2 gets Aero Snap switched back on once at
+  the next start.
+- A failure to install the hook for snap areas is reported instead of leaving
+  the feature silently dead. The About box shows whether it is active.
+- Switching snap areas off and on again no longer leaks an overlay window.
+
 ## [0.1.0] – not yet released
 
 First cut: window arrangement by keyboard and by dragging to a screen edge,

@@ -266,6 +266,17 @@ signature of a false positive — and report it to the vendor if you want it
 fixed for everyone. The lasting fix is a code signing certificate, which this
 project does not have yet.
 
+## What WinTangle changes outside its own files
+
+Only one thing, and only on request: Windows' own window arranging (Aero Snap),
+because its snap areas react to the same drag. It is touched exclusively when
+"Turn off Windows' own snapping" is ticked, and the value found beforehand is
+recorded in `HKCU\Software\WinTangle` so unticking it — or uninstalling, or
+`--cleanup` — puts back what was there, rather than assuming it should be on.
+
+Everything else lives in the program's own config file and its own registry
+keys, listed under "Removing every trace" above.
+
 ## Known limits
 
 * **Windows of elevated processes** (Task Manager, programs started as

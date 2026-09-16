@@ -1,6 +1,7 @@
 #include "Cleanup.h"
 
 #include "Paths.h"
+#include "WindowsSnap.h"
 #include "platform/Win32.h"
 
 namespace wintangle {
@@ -42,11 +43,12 @@ bool RemoveConfigDirectory() {
     return RemoveDirectoryW(dir.c_str()) != 0 || GetLastError() == ERROR_FILE_NOT_FOUND;
 }
 
-// Switch Windows' own snapping back on.
+// Put Windows' own snapping back the way the user had it. Going through the
+// same bookkeeping as everywhere else means a user who switched it off
+// themselves keeps it off.
 bool RestoreWindowsSnap() {
-    const UINT_PTR enabled = TRUE;
-    return SystemParametersInfoW(SPI_SETWINARRANGING, 0, reinterpret_cast<void*>(enabled),
-                                 SPIF_SENDCHANGE) != FALSE;
+    ApplyWindowArrangingPreference(false);
+    return true;
 }
 
 }  // namespace

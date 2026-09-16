@@ -57,6 +57,8 @@ void Footprint::Paint(HDC dc, const RECT& client) const {
 }
 
 bool Footprint::Create(HINSTANCE instance) {
+    if (hwnd_) return true;  // switching snap areas off and on again must not leak a window
+
     WNDCLASSEXW wc{};
     wc.cbSize = sizeof(wc);
     wc.lpfnWndProc = WndProc;

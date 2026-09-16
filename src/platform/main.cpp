@@ -25,6 +25,7 @@
 #include "app/HotkeyManager.h"
 #include "app/Paths.h"
 #include "app/TrayIcon.h"
+#include "app/WindowsSnap.h"
 #include "app/Updater.h"
 #include "app/UriHandler.h"
 #include "config/Config.h"
@@ -76,6 +77,7 @@ private:
     // Keeps the "window belongs to a process with higher privileges" notice
     // from appearing on every single key press.
     bool accessDeniedReported_ = false;
+    bool snapHookFailureReported_ = false;
 };
 
 void App::LoadConfig() {
@@ -115,7 +117,15 @@ void App::ApplyConfig() {
     SetLanguage(config_.language.value_or(DetectUiLanguage()));
 
     if (executor_) executor_->SetConfig(config_);
-    if (dragTracker_) dragTracker_->SyncWithConfig(config_);
+    if (dragTracker_ && !dragTracker_->SyncWithConfig(config_) && tray_) {
+        // Enabled but the hook was refused: say so once instead of leaving the
+        // user to wonder why dragging does nothing.
+        if (!snapHookFailureReported_) {
+            snapHookFailureReported_ = true;
+            tray_->ShowBalloon(T(Str::MsgSnapHookFailedTitle), T(Str::MsgSnapHookFailedText),
+                               true);
+        }
+    }
     updater_.SetAutomaticChecks(config_.automaticUpdates);
     if (settings_) settings_->UpdateConfig(config_);
 
@@ -128,18 +138,20 @@ void App::ApplyConfig() {
         tray_->ShowBalloon(T(Str::MsgHotkeyConflictTitle), text, true);
     }
 
-    // Windows' own snapping would otherwise compete with our snap areas: both
-    // react to the same drag towards an edge.
-    // SPI_SETWINARRANGING takes the value directly in pvParam, not a pointer.
-    const UINT_PTR arranging = config_.disableWindowsSnap ? FALSE : TRUE;
-    SystemParametersInfoW(SPI_SETWINARRANGING, 0, reinterpret_cast<void*>(arranging),
-                          SPIF_SENDCHANGE);
+    // Windows' own snapping competes with our snap areas -- both react to the
+    // same drag towards an edge -- but it is the user's setting, so it is only
+    // touched when they ask, and restored when they stop asking.
+    ApplyWindowArrangingPreference(config_.disableWindowsSnap);
 
     SetAutostartEnabled(config_.launchAtLogin);
 }
 
 bool App::Initialize() {
     LoadConfig();
+
+    // 0.1.0-rc1 and rc2 forced this setting on every start and could leave
+    // Aero Snap switched off for users who never asked. Undo that once.
+    RepairWindowArrangingIfDamagedByOldVersion(config_.disableWindowsSnap);
 
     WNDCLASSEXW wc{};
     wc.cbSize = sizeof(wc);
@@ -331,7 +343,13 @@ void App::ShowAbout() {
                               T(Str::AboutUrlHint) +
                               L"\nwintangle://execute-action?name=left-half\n\n" +
                               T(Str::AboutVersion) + L" " WINTANGLE_VERSION_W L"\n" +
-                              T(Str::AboutCopyright) + L"\n" + T(Str::AboutLicense);
+                              T(Str::AboutCopyright) + L"\n" + T(Str::AboutLicense) +
+                              // State worth seeing without a debugger when
+                              // something does not work.
+                              L"\n\n" + T(Str::AboutSnapAreas) + L" " +
+                              T(dragTracker_ && dragTracker_->IsRunning()
+                                    ? Str::AboutStateActive
+                                    : Str::AboutStateInactive);
     MessageBoxW(nullptr, text.c_str(), T(Str::AboutTitle).c_str(),
                 MB_ICONINFORMATION | MB_OK);
 }

@@ -40,10 +40,11 @@ enum class Str {
     MsgHotkeyConflictTitle, MsgHotkeyConflictIntro,
     MsgWindowNotMovableTitle, MsgWindowNotMovableText,
     MsgUnknownCallTitle, MsgAlreadyRunning, MsgStartFailed,
-    MsgUpdatesDisabled,
+    MsgUpdatesDisabled, MsgSnapHookFailedTitle, MsgSnapHookFailedText,
 
     // About box
     AboutTitle, AboutDescription, AboutUrlHint, AboutVersion, AboutCopyright, AboutLicense,
+    AboutSnapAreas, AboutStateActive, AboutStateInactive,
 
     // Cleanup
     CleanupTitle, CleanupStillRunning, CleanupConfirm, CleanupDoneTitle,

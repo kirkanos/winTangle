@@ -35,13 +35,13 @@ bool DragTracker::Start() {
     return hook_ != nullptr;
 }
 
-void DragTracker::SyncWithConfig(const Config& config) {
+bool DragTracker::SyncWithConfig(const Config& config) {
     config_ = &config;
-    if (config.snapAreasEnabled) {
-        Start();
-    } else {
+    if (!config.snapAreasEnabled) {
         Stop();
+        return true;
     }
+    return Start();
 }
 
 void DragTracker::Stop() {
