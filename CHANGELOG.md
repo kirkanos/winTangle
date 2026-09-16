@@ -9,11 +9,17 @@ automatically — creating a tag reads it out of this file.
 
 ## [Unreleased]
 
+## [0.1.1] – 2026-09-16
+
 ### Changed
 
 - Updates install without walking through the setup wizard again, and start the
   program afterwards. WinTangle now also quits on WinSparkle's request just
   before the installer takes over, instead of being closed by it.
+
+This is the first release that can be reached by the update mechanism, so it
+doubles as the test of it: an installed 0.1.0 should offer it, install it
+unattended and come back running.
 
 ## [0.1.0] – 2026-09-16
 
@@ -64,5 +70,6 @@ Multitasking > "Snap windows".
 - The mingw cross build carries no update checking, because WinSparkle ships
   MSVC binaries only.
 
-[Unreleased]: https://github.com/kirkanos/winTangle/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/kirkanos/winTangle/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/kirkanos/winTangle/releases/tag/v0.1.1
 [0.1.0]: https://github.com/kirkanos/winTangle/releases/tag/v0.1.0
