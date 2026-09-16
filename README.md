@@ -11,7 +11,7 @@ Native C++/Win32, no runtime dependency, a single executable.
 
 | Area | State |
 |---|---|
-| Calculation core (all 58 actions, cycling, gaps, layouts, history) | done, 55 unit tests green |
+| Calculation core (all 58 actions, cycling, gaps, layouts, history) | done, 63 unit tests green |
 | Configuration (JSON, shortcut parser, import/export) | done, tested |
 | URL scheme `wintangle://` including its parser | done, parser tested |
 | Win32 layer (windows, displays, hotkeys, tray, drag-snap, settings) | runs on Windows; keyboard shortcuts and drag-snap confirmed working, the rest of the test matrix below still open |

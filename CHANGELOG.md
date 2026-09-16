@@ -9,53 +9,12 @@ automatically — creating a tag reads it out of this file.
 
 ## [Unreleased]
 
-### Fixed
-
-- Aero Snap stayed switched off, which also disables Win+arrow, and quitting or
-  uninstalling WinTangle did not bring it back. `SPI_SETWINARRANGING` takes the
-  value in `uiParam` on a real machine, not in `pvParam` as documented — so
-  every earlier version, including the rc3 repair meant to undo the damage,
-  switched the feature off while believing it was switching it on. The setter
-  now tries the parameter combinations in turn and reads the result back after
-  each, and the repair runs again on machines rc3 and rc4 left broken. If it
-  still cannot be switched on, WinTangle says where to do it by hand instead of
-  recording a repair that never happened.
-
-- In the settings window, the language picker sat on top of the "turn off
-  Windows' own snapping" checkbox. The control positions now live in
-  `src/ui/SettingsLayout.h` as data, and a test checks that none of them
-  overlap, that they all fit inside the window and that they keep a margin to
-  its edge. The window is sized from that client area rather than from a
-  guessed width and height.
-
-- Installing over a running copy failed with "MoveFile failed; code 5" or
-  "error renaming a file in the destination directory". The program has no
-  ordinary window, only a tray icon, so the Restart Manager that Inno Setup's
-  `CloseApplications` relies on could not find it and the running executable
-  stayed locked. The installer now closes the window itself, and says so
-  plainly if that does not work instead of failing later on with a message
-  about renaming.
-
-- Windows' own snapping (Aero Snap) was switched off on every start instead of
-  being left alone. The setting is only touched when "Turn off Windows' own
-  snapping" is actually ticked, and the previous value is remembered in
-  `HKCU\Software\WinTangle` so it can be put back — including after a crash.
-  A machine that ran 0.1.0-rc1 or rc2 gets Aero Snap switched back on once at
-  the next start.
-- A failure to install the hook for snap areas is reported instead of leaving
-  the feature silently dead. The About box shows whether it is active.
-- Switching snap areas off and on again no longer leaks an overlay window.
-
-## [0.1.0] – not yet released
+## [0.1.0] – 2026-09-16
 
 First cut: window arrangement by keyboard and by dragging to a screen edge,
 modelled on Rectangle for macOS.
 
 ### Added
-
-- A small picture next to every action in the tray menu, showing where the
-  window will end up, in the manner of Rectangle. For grid actions it is drawn
-  from the same fractions the action itself uses.
 
 - 58 actions: halves, quarters, thirds, sixths, eighths and ninths, maximize
   (also height or width only), larger/smaller, center, mirror, move, switch
@@ -66,7 +25,8 @@ modelled on Rectangle for macOS.
 - Snap areas when dragging to a screen edge, with a semi transparent preview.
 - Settings window with key combination capture, inner and outer gaps, an
   ignore list and import/export.
-- Notification area icon carrying the full action catalogue.
+- Notification area icon carrying the full action catalogue, each entry with a
+  small picture of where the window will end up, in the manner of Rectangle.
 - Actions by URL: `wintangle://execute-action?name=left-half`.
 - Autostart through the registry Run key.
 - Configuration as JSON at `%APPDATA%\WinTangle\config.json`.
@@ -81,6 +41,13 @@ modelled on Rectangle for macOS.
   autostart, URL protocol and update state should go as well, and switches
   Windows' own snapping back on. Portable users get the same through
   `wintangle.exe --cleanup`.
+
+### Note for anyone who installed a release candidate
+
+Versions 0.1.0-rc1 through rc5 could leave Windows' own window snapping
+switched off, which also disables Win+arrow. 0.1.0 switches it back on once at
+first start. If it does not come back, the switch is under Settings > System >
+Multitasking > "Snap windows".
 
 ### Known limits
 
