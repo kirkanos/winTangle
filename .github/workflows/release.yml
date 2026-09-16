@@ -102,6 +102,7 @@ jobs:
         run: |
           python packaging/make_appcast.py \
             --version "${{ steps.version.outputs.version }}" \
+            --changelog-version "${{ steps.version.outputs.base }}" \
             --tag "${{ steps.version.outputs.tag }}" \
             --repo "${GITHUB_REPOSITORY}" \
             --installer "dist/${{ steps.installer.outputs.name }}" \

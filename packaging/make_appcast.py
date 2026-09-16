@@ -90,7 +90,12 @@ def to_html(lines: list[str]) -> str:
 
 def main() -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("--version", required=True)
+    p.add_argument("--version", required=True, help="version announced to WinSparkle")
+    p.add_argument(
+        "--changelog-version",
+        help="version to look up in the changelog; defaults to --version. A "
+        "pre-release (0.1.0-rc1) carries the notes of 0.1.0.",
+    )
     p.add_argument("--tag", required=True)
     p.add_argument("--repo", required=True, help="e.g. kirkanos/winTangle")
     p.add_argument("--installer", required=True, help="path to the setup executable")
@@ -106,7 +111,7 @@ def main() -> int:
     filename = os.path.basename(args.installer)
     url = f"https://github.com/{args.repo}/releases/download/{args.tag}/{filename}"
 
-    notes = to_html(changelog_section(args.changelog, args.version))
+    notes = to_html(changelog_section(args.changelog, args.changelog_version or args.version))
     if not notes.strip():
         notes = f"<p>See https://github.com/{args.repo}/releases/tag/{args.tag}</p>"
 
