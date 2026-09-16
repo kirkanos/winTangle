@@ -46,6 +46,7 @@ add_executable(wintangle_tests
     tests/main.cpp
     tests/test_core.cpp
     tests/test_config.cpp
+    tests/test_layout.cpp
     tests/test_strings.cpp
     tests/test_uri.cpp
 )

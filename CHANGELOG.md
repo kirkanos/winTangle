@@ -11,6 +11,13 @@ automatically — creating a tag reads it out of this file.
 
 ### Fixed
 
+- In the settings window, the language picker sat on top of the "turn off
+  Windows' own snapping" checkbox. The control positions now live in
+  `src/ui/SettingsLayout.h` as data, and a test checks that none of them
+  overlap, that they all fit inside the window and that they keep a margin to
+  its edge. The window is sized from that client area rather than from a
+  guessed width and height.
+
 - Installing over a running copy failed with "MoveFile failed; code 5" or
   "error renaming a file in the destination directory". The program has no
   ordinary window, only a tray icon, so the Restart Manager that Inno Setup's

@@ -10,6 +10,7 @@
 
 #include "app/Autostart.h"
 #include "app/Paths.h"
+#include "SettingsLayout.h"
 #include "app/Updater.h"
 #include "core/Shortcut.h"
 
@@ -43,9 +44,11 @@ enum : int {
     kIdCancel,
 };
 
-HWND MakeControl(HWND parent, const wchar_t* cls, const wchar_t* text, DWORD style, int x, int y,
-                 int w, int h, int id, HINSTANCE instance) {
-    HWND control = CreateWindowExW(0, cls, text, WS_CHILD | WS_VISIBLE | style, x, y, w, h, parent,
+HWND MakeControl(HWND parent, const wchar_t* cls, const wchar_t* text, DWORD style,
+                 const settings_layout::Slot& slot, int id, HINSTANCE instance) {
+    const Rect& r = slot.rect;
+    HWND control = CreateWindowExW(0, cls, text, WS_CHILD | WS_VISIBLE | style, r.left, r.top,
+                                   r.Width(), r.Height(), parent,
                                    reinterpret_cast<HMENU>(static_cast<INT_PTR>(id)), instance,
                                    nullptr);
     // Without the system font, hand built windows look like Windows 95.
@@ -137,9 +140,15 @@ void SettingsWindow::Show() {
     wc.hIcon = LoadIconW(instance_, L"APPICON");
     RegisterClassExW(&wc);
 
-    hwnd_ = CreateWindowExW(0, kClassName, T(Str::SettingsTitle).c_str(),
-                            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT,
-                            CW_USEDEFAULT, 720, 620, nullptr, nullptr, instance_, this);
+    // Size the window from the client area the layout was built for, instead
+    // of guessing at borders and caption height.
+    constexpr DWORD kStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+    RECT frame{0, 0, settings_layout::kClientWidth, settings_layout::kClientHeight};
+    AdjustWindowRectEx(&frame, kStyle, FALSE, 0);
+
+    hwnd_ = CreateWindowExW(0, kClassName, T(Str::SettingsTitle).c_str(), kStyle, CW_USEDEFAULT,
+                            CW_USEDEFAULT, frame.right - frame.left, frame.bottom - frame.top,
+                            nullptr, nullptr, instance_, this);
     if (!hwnd_) return;
 
     ShowWindow(hwnd_, SW_SHOW);
@@ -330,12 +339,14 @@ LRESULT CALLBACK SettingsWindow::RecorderProc(HWND hwnd, UINT msg, WPARAM wp, LP
 }
 
 void SettingsWindow::CreateControls(HWND parent) {
-    MakeControl(parent, WC_STATICW, T(Str::SettingsActionsHeading).c_str(), 0, 12, 10, 400, 18,
-                kIdLabelActions, instance_);
+    MakeControl(parent, WC_STATICW, T(Str::SettingsActionsHeading).c_str(), 0,
+                settings_layout::kHeading, kIdLabelActions, instance_);
 
+    const Rect& listRect = settings_layout::kList.rect;
     list_ = CreateWindowExW(WS_EX_CLIENTEDGE, WC_LISTVIEWW, L"",
                             WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
-                            12, 32, 680, 330, parent,
+                            listRect.left, listRect.top, listRect.Width(), listRect.Height(),
+                            parent,
                             reinterpret_cast<HMENU>(static_cast<INT_PTR>(kIdList)), instance_,
                             nullptr);
     ListView_SetExtendedListViewStyle(list_, LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
@@ -351,67 +362,76 @@ void SettingsWindow::CreateControls(HWND parent) {
     col.pszText = columnShortcut.data();
     ListView_InsertColumn(list_, 1, &col);
 
-    MakeControl(parent, WC_STATICW, T(Str::SettingsNewCombination).c_str(), 0, 12, 374, 120, 18,
-                kIdLabelNewCombination, instance_);
-    recorder_ = MakeControl(parent, WC_EDITW, L"", WS_BORDER | ES_READONLY, 136, 371, 220, 24,
-                            kIdRecorder, instance_);
+    MakeControl(parent, WC_STATICW, T(Str::SettingsNewCombination).c_str(), 0,
+                settings_layout::kLabelNewCombination, kIdLabelNewCombination, instance_);
+    recorder_ = MakeControl(parent, WC_EDITW, L"", WS_BORDER | ES_READONLY,
+                            settings_layout::kRecorder, kIdRecorder, instance_);
     SetWindowSubclass(recorder_, RecorderProc, kIdRecorder, reinterpret_cast<DWORD_PTR>(this));
 
-    MakeControl(parent, WC_BUTTONW, T(Str::SettingsAssign).c_str(), BS_PUSHBUTTON, 366, 371, 100,
-                24, kIdAssign,
-                instance_);
-    MakeControl(parent, WC_BUTTONW, T(Str::SettingsRemove).c_str(), BS_PUSHBUTTON, 474, 371, 100,
-                24, kIdClear,
-                instance_);
+    MakeControl(parent, WC_BUTTONW, T(Str::SettingsAssign).c_str(), BS_PUSHBUTTON,
+                settings_layout::kAssign, kIdAssign, instance_);
+    MakeControl(parent, WC_BUTTONW, T(Str::SettingsRemove).c_str(), BS_PUSHBUTTON,
+                settings_layout::kClear, kIdClear, instance_);
 
-    MakeControl(parent, WC_STATICW, T(Str::SettingsOuterGap).c_str(), 0, 12, 416, 130, 18,
-                kIdLabelOuterGap, instance_);
-    outerGap_ = MakeControl(parent, WC_EDITW, L"0", WS_BORDER | ES_NUMBER, 146, 413, 60, 22,
-                            kIdOuterGap, instance_);
-    MakeControl(parent, WC_STATICW, T(Str::SettingsInnerGap).c_str(), 0, 226, 416, 130, 18,
-                kIdLabelInnerGap, instance_);
-    innerGap_ = MakeControl(parent, WC_EDITW, L"0", WS_BORDER | ES_NUMBER, 360, 413, 60, 22,
-                            kIdInnerGap, instance_);
+    MakeControl(parent, WC_STATICW, T(Str::SettingsOuterGap).c_str(), 0,
+                settings_layout::kLabelOuterGap, kIdLabelOuterGap, instance_);
+    outerGap_ = MakeControl(parent, WC_EDITW, L"0", WS_BORDER | ES_NUMBER,
+                            settings_layout::kOuterGap, kIdOuterGap, instance_);
+    MakeControl(parent, WC_STATICW, T(Str::SettingsInnerGap).c_str(), 0,
+                settings_layout::kLabelInnerGap, kIdLabelInnerGap, instance_);
+    innerGap_ = MakeControl(parent, WC_EDITW, L"0", WS_BORDER | ES_NUMBER,
+                            settings_layout::kInnerGap, kIdInnerGap, instance_);
 
     checkCycle_ = MakeControl(parent, WC_BUTTONW, T(Str::SettingsCycleSizes).c_str(),
-                              BS_AUTOCHECKBOX, 12, 446, 320, 20, kIdCheckCycle, instance_);
-    checkSnap_ = MakeControl(parent, WC_BUTTONW, T(Str::SettingsSnapAreas).c_str(), BS_AUTOCHECKBOX, 12,
-                             470, 320, 20, kIdCheckSnap, instance_);
-    checkDisableAero_ =
-        MakeControl(parent, WC_BUTTONW, T(Str::SettingsDisableWindowsSnap).c_str(), BS_AUTOCHECKBOX,
-                    12, 494, 340, 20, kIdCheckDisableAero, instance_);
-    checkAutostart_ = MakeControl(parent, WC_BUTTONW, T(Str::SettingsLaunchAtLogin).c_str(), BS_AUTOCHECKBOX, 360,
-                                  446, 320, 20, kIdCheckAutostart, instance_);
-    checkCursor_ = MakeControl(parent, WC_BUTTONW, T(Str::SettingsMoveCursor).c_str(), BS_AUTOCHECKBOX, 360,
-                               470, 320, 20, kIdCheckCursor, instance_);
+                              BS_AUTOCHECKBOX, settings_layout::kCheckCycle, kIdCheckCycle,
+                              instance_);
+    checkSnap_ = MakeControl(parent, WC_BUTTONW, T(Str::SettingsSnapAreas).c_str(),
+                             BS_AUTOCHECKBOX, settings_layout::kCheckSnap, kIdCheckSnap,
+                             instance_);
+    checkDisableAero_ = MakeControl(parent, WC_BUTTONW,
+                                    T(Str::SettingsDisableWindowsSnap).c_str(), BS_AUTOCHECKBOX,
+                                    settings_layout::kCheckDisableAero, kIdCheckDisableAero,
+                                    instance_);
+    checkAutostart_ = MakeControl(parent, WC_BUTTONW, T(Str::SettingsLaunchAtLogin).c_str(),
+                                  BS_AUTOCHECKBOX, settings_layout::kCheckAutostart,
+                                  kIdCheckAutostart, instance_);
+    checkCursor_ = MakeControl(parent, WC_BUTTONW, T(Str::SettingsMoveCursor).c_str(),
+                               BS_AUTOCHECKBOX, settings_layout::kCheckCursor, kIdCheckCursor,
+                               instance_);
     checkUpdates_ = MakeControl(parent, WC_BUTTONW, T(Str::SettingsCheckUpdates).c_str(),
-                                BS_AUTOCHECKBOX, 360, 494, 320, 20, kIdCheckUpdates, instance_);
+                                BS_AUTOCHECKBOX, settings_layout::kCheckUpdates, kIdCheckUpdates,
+                                instance_);
     // Without update checking compiled in the box stays visible but disabled,
     // so it is obvious that this build does not have it.
     EnableWindow(checkUpdates_, Updater::IsSupported());
 
     // Language picker. First entry follows Windows, then one entry per
     // language, each written in that language itself.
-    MakeControl(parent, WC_STATICW, T(Str::SettingsLanguage).c_str(), 0, 12, 500, 90, 18,
-                kIdLabelLanguage, instance_);
+    MakeControl(parent, WC_STATICW, T(Str::SettingsLanguage).c_str(), 0,
+                settings_layout::kLabelLanguage, kIdLabelLanguage, instance_);
+    // The height passed here governs the dropped-down list, not the closed
+    // control -- which is why the layout table records the closed height and
+    // the dropdown extent separately.
+    const Rect& languageRect = settings_layout::kLanguage.rect;
     languageBox_ = CreateWindowExW(0, WC_COMBOBOXW, L"",
                                    WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST |
                                        WS_VSCROLL,
-                                   104, 496, 200, 200, parent,
+                                   languageRect.left, languageRect.top, languageRect.Width(),
+                                   settings_layout::kLanguageDropdownHeight, parent,
                                    reinterpret_cast<HMENU>(static_cast<INT_PTR>(kIdLanguage)),
                                    instance_, nullptr);
     SendMessageW(languageBox_, WM_SETFONT,
                  reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)), TRUE);
     FillLanguageBox(languageBox_);
 
-    MakeControl(parent, WC_BUTTONW, T(Str::SettingsImport).c_str(), BS_PUSHBUTTON, 12, 534, 120, 26, kIdImport,
-                instance_);
-    MakeControl(parent, WC_BUTTONW, T(Str::SettingsExport).c_str(), BS_PUSHBUTTON, 140, 534, 120, 26, kIdExport,
-                instance_);
-    MakeControl(parent, WC_BUTTONW, T(Str::SettingsSave).c_str(), BS_DEFPUSHBUTTON, 472, 534, 100, 26, kIdSave,
-                instance_);
-    MakeControl(parent, WC_BUTTONW, T(Str::SettingsCancel).c_str(), BS_PUSHBUTTON, 580, 534, 100, 26, kIdCancel,
-                instance_);
+    MakeControl(parent, WC_BUTTONW, T(Str::SettingsImport).c_str(), BS_PUSHBUTTON,
+                settings_layout::kImport, kIdImport, instance_);
+    MakeControl(parent, WC_BUTTONW, T(Str::SettingsExport).c_str(), BS_PUSHBUTTON,
+                settings_layout::kExport, kIdExport, instance_);
+    MakeControl(parent, WC_BUTTONW, T(Str::SettingsSave).c_str(), BS_DEFPUSHBUTTON,
+                settings_layout::kSave, kIdSave, instance_);
+    MakeControl(parent, WC_BUTTONW, T(Str::SettingsCancel).c_str(), BS_PUSHBUTTON,
+                settings_layout::kCancel, kIdCancel, instance_);
 }
 
 void SettingsWindow::FillList() {
