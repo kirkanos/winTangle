@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "platform/Win32.h"
+
 namespace wintangle {
 
 // Update checking through WinSparkle -- the Windows counterpart to Sparkle,
@@ -28,8 +30,10 @@ public:
     static bool IsSupported();
 
     // Must be called on the message loop thread. `version` is our own version
-    // ("0.1.0") and is what the appcast is compared against.
-    void Initialize(const std::wstring& version, bool automaticChecks);
+    // ("0.1.0") and is what the appcast is compared against. `window` is the
+    // message window, which WinSparkle asks to close before it hands over to
+    // the installer.
+    void Initialize(HWND window, const std::wstring& version, bool automaticChecks);
     void Shutdown();
 
     // Manual check with a window -- also reports when everything is current.

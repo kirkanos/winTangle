@@ -20,6 +20,21 @@ constexpr char kRegistryPath[] = "Software\\WinTangle\\Updates";
 
 // Once a day is plenty for a tool of this size.
 constexpr int kCheckIntervalSeconds = 24 * 60 * 60;
+
+// WinSparkle asks these from its own thread, so the answer must not touch
+// anything but this handle.
+HWND g_window = nullptr;
+
+// Nothing here is ever unsaved, so quitting for an update is always fine.
+// Answering no would land the user in "WinTangle cannot be restarted".
+int __cdecl CanShutdown() { return 1; }
+
+// Called after the installer has been launched, never before -- WinSparkle
+// runs the installer first and only then asks the application to leave. Posted
+// rather than called, because this arrives on WinSparkle's thread.
+void __cdecl RequestShutdown() {
+    if (g_window) PostMessageW(g_window, WM_CLOSE, 0, 0);
+}
 #endif
 
 }  // namespace
@@ -34,13 +49,18 @@ bool Updater::IsSupported() {
 #endif
 }
 
-void Updater::Initialize([[maybe_unused]] const std::wstring& version,
+void Updater::Initialize([[maybe_unused]] HWND window,
+                         [[maybe_unused]] const std::wstring& version,
                          [[maybe_unused]] bool automaticChecks) {
 #if defined(WINTANGLE_WITH_WINSPARKLE)
     if (initialized_) return;
 
+    g_window = window;
+
     // Every set_* call has to happen before win_sparkle_init().
     win_sparkle_set_appcast_url(kAppcastUrl);
+    win_sparkle_set_can_shutdown_callback(&CanShutdown);
+    win_sparkle_set_shutdown_request_callback(&RequestShutdown);
     win_sparkle_set_registry_path(kRegistryPath);
     win_sparkle_set_app_details(L"WinTangle", L"WinTangle", version.c_str());
     win_sparkle_set_automatic_check_for_updates(automaticChecks ? 1 : 0);
@@ -54,6 +74,7 @@ void Updater::Shutdown() {
 #if defined(WINTANGLE_WITH_WINSPARKLE)
     if (!initialized_) return;
     win_sparkle_cleanup();
+    g_window = nullptr;
     initialized_ = false;
 #endif
 }

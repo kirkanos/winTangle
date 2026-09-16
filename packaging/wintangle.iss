@@ -106,6 +106,10 @@ Root: HKCU; Subkey: "Software\Classes\wintangle\shell\open\command"; ValueType: 
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; \
     Flags: nowait postinstall skipifsilent
 
+; A silent update has no "run it now" checkbox, so the program would stay shut
+; after updating itself. /UPDATED=1 is passed by the appcast for exactly this.
+Filename: "{app}\{#AppExe}"; Flags: nowait runhidden; Check: StartedByUpdate
+
 [UninstallRun]
 ; If the user asks for it, the program cleans up after itself. The list of what
 ; to remove therefore lives in exactly one place (src/app/Cleanup.cpp) and is
@@ -191,6 +195,12 @@ begin
     // A named cause beats the installer's own "error renaming a file in the
     // destination directory" further down the line.
     Result := ExpandConstant('{cm:StillRunning}');
+end;
+
+// True when the setup was started by WinSparkle rather than by a person.
+function StartedByUpdate(): Boolean;
+begin
+  Result := ExpandConstant('{param:UPDATED|0}') = '1';
 end;
 
 function ShouldRemoveSettings(): Boolean;

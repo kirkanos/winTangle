@@ -115,6 +115,12 @@ def main() -> int:
     if not notes.strip():
         notes = f"<p>See https://github.com/{args.repo}/releases/tag/{args.tag}</p>"
 
+    # Arguments handed to the setup when WinSparkle runs it. An update should
+    # not walk the user through the wizard again: /SILENT shows progress only,
+    # and /UPDATED=1 is our own switch telling the installer to start the
+    # program again afterwards, which /SILENT would otherwise suppress.
+    installer_arguments = "/SILENT /SUPPRESSMSGBOXES /NORESTART /UPDATED=1"
+
     xml = f"""<?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>
@@ -132,6 +138,7 @@ def main() -> int:
                  sparkle:version="{escape(args.version)}"
                  sparkle:shortVersionString="{escape(args.version)}"
                  sparkle:os="windows"
+                 sparkle:installerArguments="{escape(installer_arguments)}"
                  length="{size}"
                  type="application/octet-stream" />
     </item>

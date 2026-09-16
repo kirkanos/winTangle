@@ -189,6 +189,14 @@ the newest release, so it never needs maintaining. The file is produced during
 the release workflow by `packaging/make_appcast.py`, and the changes it shows
 come from CHANGELOG.md.
 
+Installing an update means running the new setup — WinSparkle downloads the
+file named in the appcast and executes it; it never replaces individual files
+itself. The appcast passes `/SILENT /SUPPRESSMSGBOXES /NORESTART /UPDATED=1`,
+so an update runs without walking through the wizard again, and `/UPDATED=1`
+is what tells the installer to start the program afterwards, which a silent
+install otherwise would not. WinTangle quits on request just before the
+installer takes over, rather than being shut by it.
+
 The ZIP download updates the same way — though doing so turns it into an
 installation, because the update runs the installer.
 
@@ -280,6 +288,8 @@ What the program does about it:
 
 - the system-wide hook is installed only while snap areas are actually enabled,
   not unconditionally at startup,
+- updates run the published installer rather than replacing the program's own
+  files, which is the behaviour scanners read as a dropper,
 - the Run key and the URL protocol are written only when they are missing or
   wrong, not on every start,
 - the executable carries full version information, so its origin is visible in

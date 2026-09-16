@@ -9,6 +9,12 @@ automatically — creating a tag reads it out of this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Updates install without walking through the setup wizard again, and start the
+  program afterwards. WinTangle now also quits on WinSparkle's request just
+  before the installer takes over, instead of being closed by it.
+
 ## [0.1.0] – 2026-09-16
 
 First cut: window arrangement by keyboard and by dragging to a screen edge,

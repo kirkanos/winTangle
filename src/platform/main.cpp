@@ -193,7 +193,7 @@ bool App::Initialize() {
 
     // Only start WinSparkle once the configuration is in place -- the switch
     // for automatic checks goes straight to the library.
-    updater_.Initialize(Widen(WINTANGLE_VERSION), config_.automaticUpdates);
+    updater_.Initialize(hwnd_, Widen(WINTANGLE_VERSION), config_.automaticUpdates);
 
     if (aeroSnapRepairFailed_ && tray_) {
         tray_->ShowBalloon(T(Str::MsgAeroSnapBrokenTitle), T(Str::MsgAeroSnapBrokenText), true);
