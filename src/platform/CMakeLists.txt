@@ -129,4 +129,9 @@ endif()
 
 if(MSVC)
     target_compile_options(wintangle PRIVATE /W4 /permissive- /utf-8)
+
+    # The manifest is embedded through wintangle.rc, which is also how the
+    # mingw build gets it. MSVC would otherwise generate a second one and the
+    # resource compiler refuses the duplicate (CVT1100).
+    target_link_options(wintangle PRIVATE /MANIFEST:NO)
 endif()
