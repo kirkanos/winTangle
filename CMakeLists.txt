@@ -5,6 +5,14 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# A single statically linked executable -- no VC redistributable to install.
+# This has to be set for every target, not just the app: mixing a static and a
+# dynamic CRT within one binary is a link error (LNK2038), and the core library
+# and the tests are linked into it.
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 # ---------------------------------------------------------------------------
 # wintangle_core: the entire geometry, platform free.
 # Builds and tests on macOS and Linux too -- which is exactly why it is split

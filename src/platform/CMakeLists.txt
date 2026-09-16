@@ -129,7 +129,4 @@ endif()
 
 if(MSVC)
     target_compile_options(wintangle PRIVATE /W4 /permissive- /utf-8)
-    # A single statically linked executable -- no VC redistributable needed.
-    set_property(TARGET wintangle PROPERTY
-                 MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
