@@ -11,6 +11,12 @@ automatically — creating a tag reads it out of this file.
 
 ### Fixed
 
+- Installing over a running copy failed with "MoveFile failed; code 5". The
+  program has no ordinary window, only a tray icon, so the Restart Manager that
+  Inno Setup's `CloseApplications` relies on could not find it and the running
+  executable stayed locked. The installer now asks it to quit through the new
+  `wintangle.exe --quit`, as does the uninstaller.
+
 - Windows' own snapping (Aero Snap) was switched off on every start instead of
   being left alone. The setting is only touched when "Turn off Windows' own
   snapping" is actually ticked, and the previous value is remembered in

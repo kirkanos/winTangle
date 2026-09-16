@@ -109,6 +109,11 @@ Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; \
 ; to remove therefore lives in exactly one place (src/app/Cleanup.cpp) and is
 ; not duplicated in this script.
 ; Runs before the files are deleted, while the executable is still there.
+; Quit a running copy first, for the same reason as in PrepareToInstall:
+; otherwise the uninstaller cannot delete the executable.
+Filename: "{app}\{#AppExe}"; Parameters: "--quit"; \
+    Flags: runhidden waituntilterminated; RunOnceId: "wintangle-quit"
+
 Filename: "{app}\{#AppExe}"; Parameters: "--cleanup --silent"; \
     Flags: runhidden waituntilterminated; RunOnceId: "wintangle-cleanup"; \
     Check: ShouldRemoveSettings
@@ -129,6 +134,24 @@ begin
     ExpandConstant('{cm:RemoveSettingsPrompt}'),
     mbConfirmation, MB_YESNO, IDNO) = IDYES;
   Result := True;
+end;
+
+// WinTangle has no ordinary window, only a tray icon, so the Restart Manager
+// behind CloseApplications cannot find it. A running copy would keep the
+// executable locked and the install would fail with "MoveFile failed; code 5".
+// Ask it to quit itself instead.
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  Exe: String;
+  ResultCode: Integer;
+begin
+  Result := '';
+  NeedsRestart := False;
+  Exe := ExpandConstant('{app}\{#AppExe}');
+  if FileExists(Exe) then
+  begin
+    Exec(Exe, '--quit', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  end;
 end;
 
 function ShouldRemoveSettings(): Boolean;

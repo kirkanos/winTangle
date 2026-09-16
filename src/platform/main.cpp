@@ -387,6 +387,28 @@ int RunCleanup(bool silent, bool appRunning) {
     return report.failed.empty() ? 0 : 1;
 }
 
+// Asks a running instance to quit and waits for it to actually be gone.
+//
+// The installer needs this: WinTangle has no ordinary window, only a
+// message-only one and a tray icon, so Windows' Restart Manager -- which is
+// what Inno Setup's CloseApplications relies on -- cannot see it. A running
+// copy would keep wintangle.exe locked and the installer would fail to replace
+// it with "MoveFile failed; code 5".
+int QuitRunningInstance() {
+    HWND target = FindWindowExW(HWND_MESSAGE, nullptr, kWindowClass, nullptr);
+    if (!target) return 0;  // nothing running is a success, not an error
+
+    PostMessageW(target, WM_CLOSE, 0, 0);
+
+    // Wait for the window to disappear rather than guess at a sleep: the
+    // installer runs right after this returns.
+    for (int waited = 0; waited < 5000; waited += 50) {
+        if (!IsWindow(target)) return 0;
+        Sleep(50);
+    }
+    return 1;  // still there -- the installer will report the locked file
+}
+
 bool HasFlag(std::wstring_view args, std::wstring_view flag) {
     return args.find(flag) != std::wstring_view::npos;
 }
@@ -404,6 +426,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int) {
 
     const std::wstring wideArgs = commandLine ? commandLine : L"";
     const std::string args = Narrow(wideArgs);
+
+    if (HasFlag(wideArgs, L"--quit")) {
+        const int code = QuitRunningInstance();
+        if (mutex) CloseHandle(mutex);
+        return code;
+    }
 
     if (HasFlag(wideArgs, L"--cleanup")) {
         const int code = RunCleanup(HasFlag(wideArgs, L"--silent"), alreadyRunning);

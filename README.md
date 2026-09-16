@@ -154,6 +154,13 @@ The portable build has no uninstaller, so it offers the same by hand:
 wintangle.exe --cleanup
 ```
 
+A running copy can also be asked to quit from the command line, which is what
+the installer and uninstaller do before replacing or deleting the executable:
+
+```
+wintangle.exe --quit
+```
+
 Either way this is what gets removed:
 
 | Trace | Location |
