@@ -226,6 +226,18 @@ src/app/       hotkeys, tray icon, autostart, URL scheme, paths, cleanup
 src/snap/      drag detection and the preview overlay
 src/ui/        settings window
 packaging/     Inno Setup script and appcast generation
+tools/         developer aids, not part of the app
+```
+
+The tray menu shows a small picture of the resulting position next to every
+action, as Rectangle does. The shapes are described in `src/core/ActionGlyph.h`
+in fractions of the icon, and for every grid action they come from the same
+`FractionFor()` the behaviour uses — so the picture cannot end up showing
+something the action does not do. To look at them without Windows:
+
+```
+cmake --build build --target dump_glyphs
+./build/dump_glyphs | python3 tools/preview_glyphs.py glyphs.png
 ```
 
 The core works purely with `Rect` and knows nothing about `HWND`. Every action

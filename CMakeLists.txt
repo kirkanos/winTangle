@@ -20,6 +20,7 @@ endif()
 # ---------------------------------------------------------------------------
 add_library(wintangle_core STATIC
     src/core/Action.cpp
+    src/core/ActionGlyph.cpp
     src/core/Calculation.cpp
     src/core/History.cpp
     src/core/Json.cpp
@@ -46,6 +47,7 @@ add_executable(wintangle_tests
     tests/main.cpp
     tests/test_core.cpp
     tests/test_config.cpp
+    tests/test_glyph.cpp
     tests/test_layout.cpp
     tests/test_strings.cpp
     tests/test_uri.cpp
@@ -53,6 +55,13 @@ add_executable(wintangle_tests
 target_link_libraries(wintangle_tests PRIVATE wintangle_core)
 target_include_directories(wintangle_tests PRIVATE tests)
 add_test(NAME core COMMAND wintangle_tests)
+
+# ---------------------------------------------------------------------------
+# Developer tool: dumps the menu glyph data so tools/preview_glyphs.py can
+# rasterise it. Not part of the app, and built on any platform.
+# ---------------------------------------------------------------------------
+add_executable(dump_glyphs EXCLUDE_FROM_ALL tools/dump_glyphs.cpp)
+target_link_libraries(dump_glyphs PRIVATE wintangle_core)
 
 # ---------------------------------------------------------------------------
 # The actual app -- Windows only.

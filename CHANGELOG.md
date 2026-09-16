@@ -53,6 +53,10 @@ modelled on Rectangle for macOS.
 
 ### Added
 
+- A small picture next to every action in the tray menu, showing where the
+  window will end up, in the manner of Rectangle. For grid actions it is drawn
+  from the same fractions the action itself uses.
+
 - 58 actions: halves, quarters, thirds, sixths, eighths and ninths, maximize
   (also height or width only), larger/smaller, center, mirror, move, switch
   display.

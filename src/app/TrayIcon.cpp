@@ -69,9 +69,33 @@ void TrayIcon::ShowBalloon(const std::wstring& title, const std::wstring& text, 
     Shell_NotifyIconW(NIM_MODIFY, &balloon);
 }
 
+void TrayIcon::AppendAction(HMENU menu, Action action, size_t index, const Config& config,
+                            UINT dpi) {
+    const std::wstring label = MenuLabel(action, config);
+
+    MENUITEMINFOW item{};
+    item.cbSize = sizeof(item);
+    item.fMask = MIIM_STRING | MIIM_ID;
+    item.wID = static_cast<UINT>(kCmdActionBase + index);
+    item.dwTypeData = const_cast<wchar_t*>(label.c_str());
+
+    // A picture of the resulting position, the way Rectangle shows one. If the
+    // bitmap cannot be made, the entry simply appears without it.
+    if (HBITMAP bitmap = icons_.For(action, dpi)) {
+        item.fMask |= MIIM_BITMAP;
+        item.hbmpItem = bitmap;
+    }
+
+    InsertMenuItemW(menu, GetMenuItemCount(menu), TRUE, &item);
+}
+
 void TrayIcon::ShowMenu(const Config& config, bool autostartEnabled, bool updatesSupported) {
     HMENU menu = CreatePopupMenu();
     if (!menu) return;
+
+    // Menus appear on the monitor the cursor is on, so the icons are drawn for
+    // that monitor's scaling.
+    const UINT dpi = GetDpiForWindow(owner_);
 
     const auto& all = AllActions();
     auto indexOf = [&all](Action a) {
@@ -84,7 +108,7 @@ void TrayIcon::ShowMenu(const Config& config, bool autostartEnabled, bool update
     for (const Group& group : Groups()) {
         HMENU sub = CreatePopupMenu();
         for (size_t i = indexOf(group.first); i <= indexOf(group.last); ++i) {
-            AppendMenuW(sub, MF_STRING, kCmdActionBase + i, MenuLabel(all[i], config).c_str());
+            AppendAction(sub, all[i], i, config, dpi);
         }
         AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(sub), T(group.label).c_str());
     }

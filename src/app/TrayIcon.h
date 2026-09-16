@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "MenuIcons.h"
 #include "config/Config.h"
 #include "platform/Win32.h"
 
@@ -27,7 +28,11 @@ public:
     void ShowMenu(const Config& config, bool autostartEnabled, bool updatesSupported);
 
 private:
+    // Appends an action entry with its picture.
+    void AppendAction(HMENU menu, Action action, size_t index, const Config& config, UINT dpi);
+
     NOTIFYICONDATAW data_{};
+    MenuIcons icons_;
     HWND owner_;
     HICON icon_;
 };
