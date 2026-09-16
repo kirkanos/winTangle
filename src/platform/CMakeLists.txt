@@ -85,22 +85,39 @@ if(WINTANGLE_ENABLE_UPDATES)
     )
     FetchContent_MakeAvailable(winsparkle)
 
-    target_include_directories(wintangle PRIVATE ${winsparkle_SOURCE_DIR}/include)
-    target_link_libraries(wintangle PRIVATE ${winsparkle_SOURCE_DIR}/x64/Release/WinSparkle.lib)
+    # The published archive was packed on a macOS machine and therefore has two
+    # top-level entries (WinSparkle-x.y.z/ and __MACOSX/). CMake only strips a
+    # leading directory when there is exactly one, so the payload may sit one
+    # level down. Look in both places rather than assume either.
+    set(WINSPARKLE_ROOT "")
+    foreach(candidate "${winsparkle_SOURCE_DIR}" "${winsparkle_SOURCE_DIR}/WinSparkle-0.9.4")
+        if(EXISTS "${candidate}/include/winsparkle.h")
+            set(WINSPARKLE_ROOT "${candidate}")
+            break()
+        endif()
+    endforeach()
+    if(NOT WINSPARKLE_ROOT)
+        message(FATAL_ERROR
+            "winsparkle.h not found under ${winsparkle_SOURCE_DIR}. The archive "
+            "layout changed; adjust the candidate list above.")
+    endif()
+
+    target_include_directories(wintangle PRIVATE ${WINSPARKLE_ROOT}/include)
+    target_link_libraries(wintangle PRIVATE ${WINSPARKLE_ROOT}/x64/Release/WinSparkle.lib)
     target_compile_definitions(wintangle PRIVATE WINTANGLE_WITH_WINSPARKLE)
 
     # The DLL has to sit next to the executable, in the build tree as well as
     # in the installation directory.
     add_custom_command(TARGET wintangle POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${winsparkle_SOURCE_DIR}/x64/Release/WinSparkle.dll
+                ${WINSPARKLE_ROOT}/x64/Release/WinSparkle.dll
                 $<TARGET_FILE_DIR:wintangle>
         COMMENT "Copying WinSparkle.dll next to the executable"
     )
 
     # Hand the paths up for the release package.
-    set(WINSPARKLE_DLL ${winsparkle_SOURCE_DIR}/x64/Release/WinSparkle.dll PARENT_SCOPE)
-    set(WINSPARKLE_LICENSE ${winsparkle_SOURCE_DIR}/COPYING PARENT_SCOPE)
+    set(WINSPARKLE_DLL ${WINSPARKLE_ROOT}/x64/Release/WinSparkle.dll PARENT_SCOPE)
+    set(WINSPARKLE_LICENSE ${WINSPARKLE_ROOT}/COPYING PARENT_SCOPE)
 endif()
 
 if(MINGW)

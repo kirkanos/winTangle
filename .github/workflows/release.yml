@@ -17,7 +17,7 @@ jobs:
         shell: bash  # Git Bash is available on the Windows runner
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0  # full history for the change list
 
