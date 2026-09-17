@@ -54,6 +54,7 @@ inline constexpr int kLanguageDropdownHeight = 200;
 
 inline constexpr Slot kImport{"import", {12, 566, 132, 592}};
 inline constexpr Slot kExport{"export", {140, 566, 260, 592}};
+inline constexpr Slot kRestoreDefaults{"restore-defaults", {268, 566, 428, 592}};
 inline constexpr Slot kSave{"save", {472, 566, 572, 592}};
 inline constexpr Slot kCancel{"cancel", {580, 566, 680, 592}};
 
@@ -64,7 +65,7 @@ inline constexpr Slot kAll[] = {
     kCheckCycle, kCheckSnap, kCheckDisableAero,
     kCheckAutostart, kCheckCursor, kCheckUpdates,
     kLabelLanguage, kLanguage,
-    kImport, kExport, kSave, kCancel,
+    kImport, kExport, kRestoreDefaults, kSave, kCancel,
 };
 
 }  // namespace wintangle::settings_layout

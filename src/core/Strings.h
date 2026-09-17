@@ -31,11 +31,13 @@ enum class Str {
     SettingsAssignHint, SettingsRemove, SettingsOuterGap,
     SettingsInnerGap, SettingsCycleSizes, SettingsSnapAreas, SettingsDisableWindowsSnap,
     SettingsLaunchAtLogin, SettingsMoveCursor, SettingsCheckUpdates, SettingsLanguage,
-    SettingsLanguageAuto, SettingsImport, SettingsExport, SettingsSave, SettingsCancel,
+    SettingsLanguageAuto, SettingsImport, SettingsExport, SettingsRestoreDefaults,
+    SettingsSave, SettingsCancel,
     SettingsUnbound,
 
     // Messages
     MsgImportFailed, MsgImportWarnings, MsgExportFailed, MsgSkipped,
+    MsgRestoreDefaultsTitle, MsgRestoreDefaultsText,
     MsgConfigUnreadable, MsgDefaultsApply,
     MsgHotkeyConflictTitle, MsgHotkeyConflictIntro,
     MsgWindowNotMovableTitle, MsgWindowNotMovableText,

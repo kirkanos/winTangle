@@ -113,6 +113,10 @@ importable/exportable from there. Line comments (`//`) are allowed.
 A `shortcuts` block replaces the default bindings entirely; an empty value
 (`""`) explicitly unbinds an action.
 
+"Restore defaults" in the settings window puts everything back to how it was
+delivered. It asks first, and nothing is written until you save — so cancelling
+still leaves the old configuration untouched.
+
 ## Language
 
 The interface speaks English and German. By default it follows the language

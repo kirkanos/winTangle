@@ -38,6 +38,7 @@ enum : int {
     kIdLabelLanguage,
     kIdImport,
     kIdExport,
+    kIdRestoreDefaults,
     kIdSave,
     kIdCancel,
 };
@@ -205,6 +206,7 @@ void SettingsWindow::RelabelControls() {
         {kIdCheckAutostart, Str::SettingsLaunchAtLogin},
         {kIdCheckCursor, Str::SettingsMoveCursor},
         {kIdCheckUpdates, Str::SettingsCheckUpdates},
+        {kIdRestoreDefaults, Str::SettingsRestoreDefaults},
         {kIdImport, Str::SettingsImport},
         {kIdExport, Str::SettingsExport},
         {kIdSave, Str::SettingsSave},
@@ -263,6 +265,7 @@ LRESULT CALLBACK SettingsWindow::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
             }
             switch (LOWORD(wp)) {
                 case kIdClear: self->ClearShortcut(); return 0;
+                case kIdRestoreDefaults: self->RestoreDefaults(); return 0;
                 case kIdImport: self->ImportFromFile(); return 0;
                 case kIdExport: self->ExportToFile(); return 0;
                 case kIdSave: {
@@ -437,6 +440,8 @@ void SettingsWindow::CreateControls(HWND parent) {
                 settings_layout::kImport, kIdImport, instance_);
     MakeControl(parent, WC_BUTTONW, T(Str::SettingsExport).c_str(), BS_PUSHBUTTON,
                 settings_layout::kExport, kIdExport, instance_);
+    MakeControl(parent, WC_BUTTONW, T(Str::SettingsRestoreDefaults).c_str(), BS_PUSHBUTTON,
+                settings_layout::kRestoreDefaults, kIdRestoreDefaults, instance_);
     MakeControl(parent, WC_BUTTONW, T(Str::SettingsSave).c_str(), BS_DEFPUSHBUTTON,
                 settings_layout::kSave, kIdSave, instance_);
     MakeControl(parent, WC_BUTTONW, T(Str::SettingsCancel).c_str(), BS_PUSHBUTTON,
@@ -545,6 +550,28 @@ void SettingsWindow::ReadControlsIntoConfig() {
         if (index < all.size()) config_.language = all[index];
     }
     config_.launchAtLogin = GetCheck(checkAutostart_);
+}
+
+void SettingsWindow::RestoreDefaults() {
+    const int answer =
+        MessageBoxW(hwnd_, T(Str::MsgRestoreDefaultsText).c_str(),
+                    T(Str::MsgRestoreDefaultsTitle).c_str(),
+                    MB_ICONQUESTION | MB_YESNO | MB_DEFBUTTON2);
+    if (answer != IDYES) return;
+
+    config_ = Config::Defaults();
+
+    // The defaults follow Windows for the language, so the window may have to
+    // change language on the spot.
+    SetLanguage(config_.language.value_or(DetectUiLanguage()));
+    WriteConfigIntoControls();
+
+    // WriteConfigIntoControls reads autostart from the registry rather than
+    // from the configuration, because that is where it really lives. Restoring
+    // defaults is the one case where the configuration wins.
+    SetCheck(checkAutostart_, config_.launchAtLogin);
+
+    RelabelControls();
 }
 
 void SettingsWindow::ImportFromFile() {

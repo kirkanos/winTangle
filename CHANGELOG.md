@@ -9,6 +9,13 @@ automatically — creating a tag reads it out of this file.
 
 ## [Unreleased]
 
+### Added
+
+- A "Restore defaults" button in the settings, putting every setting back to
+  how it was delivered — key bindings, gaps, ignore list, language and
+  switches. It asks first, and like every other change in that window it only
+  reaches disk on save.
+
 ## [0.1.2] – 2026-09-17
 
 ### Fixed

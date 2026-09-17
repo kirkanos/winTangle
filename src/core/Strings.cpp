@@ -58,6 +58,7 @@ constexpr std::array<Entry, static_cast<size_t>(Str::Count_)> kStrings{{
     {Str::SettingsLanguageAuto, "Same as Windows", "Wie Windows"},
     {Str::SettingsImport, "Import…", "Importieren…"},
     {Str::SettingsExport, "Export…", "Exportieren…"},
+    {Str::SettingsRestoreDefaults, "Restore defaults", "Zurücksetzen"},
     {Str::SettingsSave, "Save", "Speichern"},
     {Str::SettingsCancel, "Cancel", "Abbrechen"},
     {Str::SettingsUnbound, "—", "—"},
@@ -66,6 +67,16 @@ constexpr std::array<Entry, static_cast<size_t>(Str::Count_)> kStrings{{
     {Str::MsgImportWarnings, "Import with warnings", "Import mit Hinweisen"},
     {Str::MsgExportFailed, "Export failed", "Export fehlgeschlagen"},
     {Str::MsgSkipped, "Skipped:", "Übersprungen:"},
+    {Str::MsgRestoreDefaultsTitle, "Restore default settings?",
+     "Standardeinstellungen wiederherstellen?"},
+    {Str::MsgRestoreDefaultsText,
+     "Every setting goes back to how it was delivered: all key bindings, the "
+     "gaps, the ignore list, the language and the switches. Nothing is written "
+     "until you save.",
+     "Alle Einstellungen gehen in den Auslieferungszustand zurück: sämtliche "
+     "Tastenbelegungen, die Abstände, die Ignorierliste, die Sprache und die "
+     "Schalter. Geschrieben wird erst beim Speichern."},
+
     {Str::MsgConfigUnreadable, "The configuration could not be read:",
      "Die Konfiguration konnte nicht gelesen werden:"},
     {Str::MsgDefaultsApply, "The default settings apply.",

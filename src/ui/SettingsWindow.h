@@ -52,6 +52,10 @@ private:
     void ClearShortcut();
     void ReadControlsIntoConfig();
     void WriteConfigIntoControls();
+    // Puts the working copy back to Config::Defaults(). Like every other
+    // change in this window it only reaches disk on save.
+    void RestoreDefaults();
+
     void ImportFromFile();
     void ExportToFile();
     int SelectedRow() const;
