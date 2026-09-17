@@ -9,6 +9,8 @@ automatically — creating a tag reads it out of this file.
 
 ## [Unreleased]
 
+## [0.1.3] – 2026-09-17
+
 ### Fixed
 
 - Key combinations still could not be assigned, for a second and more basic
@@ -104,7 +106,8 @@ Multitasking > "Snap windows".
 - The mingw cross build carries no update checking, because WinSparkle ships
   MSVC binaries only.
 
-[Unreleased]: https://github.com/kirkanos/winTangle/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/kirkanos/winTangle/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/kirkanos/winTangle/releases/tag/v0.1.3
 [0.1.2]: https://github.com/kirkanos/winTangle/releases/tag/v0.1.2
 [0.1.1]: https://github.com/kirkanos/winTangle/releases/tag/v0.1.1
 [0.1.0]: https://github.com/kirkanos/winTangle/releases/tag/v0.1.0
