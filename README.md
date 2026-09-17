@@ -274,8 +274,9 @@ URL call and drag-snap all run through the same path.
 8. Install, update and uninstall including the cleanup prompt.
 
 Confirmed so far on a real machine: keyboard shortcuts move windows, dragging
-to a screen edge snaps, and Windows' own snapping survives quitting and
-uninstalling WinTangle.
+to a screen edge snaps, Windows' own snapping survives quitting and
+uninstalling WinTangle, and an installed copy updates itself unattended and
+comes back running.
 
 Still open, and the most likely place for a real defect: two displays at
 different scaling.
@@ -305,8 +306,10 @@ What the program does about it:
 A scanner does not stop at complaining. AVG has been observed to hold the
 freshly written file open during installation, which makes the setup fail with
 *"an error occurred while trying to rename a file in the destination
-directory"* — the file being renamed is `wintangle.exe` itself. If that
-happens:
+directory"* — the file being renamed is `wintangle.exe` itself. This applies to
+updates just as much as to the first install, since an update runs the same
+setup: with real-time protection on, it fails; with it off, it completes
+unattended. If that happens:
 
 - add an exclusion for the installation directory
   (`%LOCALAPPDATA%\Programs\WinTangle`) and for the setup executable, or
