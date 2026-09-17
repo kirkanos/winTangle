@@ -21,8 +21,6 @@ constexpr wchar_t kClassName[] = L"WinTangleSettings";
 
 enum : int {
     kIdList = 200,
-    kIdRecorder,
-    kIdAssign,
     kIdClear,
     kIdOuterGap,
     kIdInnerGap,
@@ -34,7 +32,7 @@ enum : int {
     kIdCheckUpdates,
     kIdLanguage,
     kIdLabelActions,
-    kIdLabelNewCombination,
+    kIdLabelHint,
     kIdLabelOuterGap,
     kIdLabelInnerGap,
     kIdLabelLanguage,
@@ -85,6 +83,20 @@ void FillLanguageBox(HWND box) {
         SendMessageW(box, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(name.c_str()));
     }
     if (selected != CB_ERR) SendMessageW(box, CB_SETCURSEL, static_cast<WPARAM>(selected), 0);
+}
+
+bool IsModifierKey(unsigned vk) {
+    return vk == VK_CONTROL || vk == VK_MENU || vk == VK_SHIFT || vk == VK_LWIN || vk == VK_RWIN;
+}
+
+// The modifiers held right now, in the same bits RegisterHotKey uses.
+unsigned CurrentModifiers() {
+    unsigned mods = 0;
+    if (GetKeyState(VK_CONTROL) < 0) mods |= kModCtrl;
+    if (GetKeyState(VK_MENU) < 0) mods |= kModAlt;
+    if (GetKeyState(VK_SHIFT) < 0) mods |= kModShift;
+    if (GetKeyState(VK_LWIN) < 0 || GetKeyState(VK_RWIN) < 0) mods |= kModWin;
+    return mods;
 }
 
 bool ChooseFile(HWND owner, bool save, std::wstring& path) {
@@ -153,6 +165,8 @@ void SettingsWindow::Show() {
 
     ShowWindow(hwnd_, SW_SHOW);
     SetForegroundWindow(hwnd_);
+    // The list is where the work happens, so it starts with the focus.
+    SetFocus(list_);
 }
 
 void SettingsWindow::OnLanguageChanged() {
@@ -180,11 +194,10 @@ void SettingsWindow::RelabelControls() {
         Str text;
     } captions[] = {
         {kIdLabelActions, Str::SettingsActionsHeading},
-        {kIdLabelNewCombination, Str::SettingsNewCombination},
+        {kIdLabelHint, Str::SettingsAssignHint},
         {kIdLabelOuterGap, Str::SettingsOuterGap},
         {kIdLabelInnerGap, Str::SettingsInnerGap},
         {kIdLabelLanguage, Str::SettingsLanguage},
-        {kIdAssign, Str::SettingsAssign},
         {kIdClear, Str::SettingsRemove},
         {kIdCheckCycle, Str::SettingsCycleSizes},
         {kIdCheckSnap, Str::SettingsSnapAreas},
@@ -249,7 +262,6 @@ LRESULT CALLBACK SettingsWindow::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
                 return 0;
             }
             switch (LOWORD(wp)) {
-                case kIdAssign: self->ApplyRecordedShortcut(); return 0;
                 case kIdClear: self->ClearShortcut(); return 0;
                 case kIdImport: self->ImportFromFile(); return 0;
                 case kIdExport: self->ExportToFile(); return 0;
@@ -270,12 +282,6 @@ LRESULT CALLBACK SettingsWindow::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
         }
         case WM_NOTIFY: {
             if (!self) break;
-            auto* header = reinterpret_cast<NMHDR*>(lp);
-            // Double clicking a row jumps straight into the capture field.
-            if (header->idFrom == kIdList && header->code == NM_DBLCLK) {
-                SetFocus(self->recorder_);
-                return 0;
-            }
             break;
         }
         case WM_CLOSE:
@@ -295,43 +301,51 @@ LRESULT CALLBACK SettingsWindow::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
     return DefWindowProcW(hwnd, msg, wp, lp);
 }
 
-// The capture field swallows every key press and displays it as a combination
-// instead of entering text.
-LRESULT CALLBACK SettingsWindow::RecorderProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp,
-                                              UINT_PTR id, DWORD_PTR ref) {
+// Key capture on the action list itself: pick a row, press the combination.
+//
+// The dialog message loop is what makes this delicate. IsDialogMessage turns
+// arrow keys into navigation and Enter into "press the default button" before
+// any control sees them -- which is precisely why assigning Ctrl+Alt+Left or
+// Ctrl+Alt+Enter did nothing at all. A control only gets those keys if it says
+// so through WM_GETDLGCODE, and this one says so exactly while a modifier is
+// held, so plain arrows still move through the list.
+LRESULT CALLBACK SettingsWindow::ListProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR id,
+                                          DWORD_PTR ref) {
     auto* self = reinterpret_cast<SettingsWindow*>(ref);
 
     switch (msg) {
+        case WM_GETDLGCODE:
+            if (CurrentModifiers() != 0) return DLGC_WANTALLKEYS;
+            break;
+
         case WM_KEYDOWN:
         case WM_SYSKEYDOWN: {
             const unsigned vk = static_cast<unsigned>(wp);
-            // Modifiers on their own are not a combination yet.
-            const bool isModifier = vk == VK_CONTROL || vk == VK_MENU || vk == VK_SHIFT ||
-                                    vk == VK_LWIN || vk == VK_RWIN;
-            if (isModifier) return 0;
+            if (IsModifierKey(vk)) break;  // a modifier alone is not a combination
 
-            Shortcut s;
-            if (GetKeyState(VK_CONTROL) < 0) s.mods |= kModCtrl;
-            if (GetKeyState(VK_MENU) < 0) s.mods |= kModAlt;
-            if (GetKeyState(VK_SHIFT) < 0) s.mods |= kModShift;
-            if (GetKeyState(VK_LWIN) < 0 || GetKeyState(VK_RWIN) < 0) s.mods |= kModWin;
-            s.vk = vk;
-
-            if (s.mods == 0 || KeyName(s.vk).empty()) {
-                SetWindowTextW(hwnd, T(Str::SettingsHoldModifier).c_str());
-                self->recorded_ = Shortcut{};
-                return 0;
+            const unsigned mods = CurrentModifiers();
+            if (mods == 0) {
+                // Without a modifier the list keeps its normal behaviour, so
+                // arrows and type-ahead still work. Delete clears the binding.
+                if (vk == VK_DELETE || vk == VK_BACK) {
+                    self->ClearShortcut();
+                    return 0;
+                }
+                break;
             }
-            self->recorded_ = s;
-            SetWindowTextW(hwnd, Widen(FormatShortcut(s)).c_str());
+
+            if (!KeyName(vk).empty()) self->AssignShortcut(Shortcut{mods, vk});
             return 0;
         }
-        case WM_CHAR:
+
         case WM_SYSCHAR:
-            return 0;  // no text in the capture field
+            // Swallows the beep Windows makes for Alt combinations.
+            return 0;
+
         case WM_NCDESTROY:
-            RemoveWindowSubclass(hwnd, RecorderProc, id);
+            RemoveWindowSubclass(hwnd, ListProc, id);
             break;
+
         default:
             break;
     }
@@ -350,6 +364,7 @@ void SettingsWindow::CreateControls(HWND parent) {
                             reinterpret_cast<HMENU>(static_cast<INT_PTR>(kIdList)), instance_,
                             nullptr);
     ListView_SetExtendedListViewStyle(list_, LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
+    SetWindowSubclass(list_, ListProc, kIdList, reinterpret_cast<DWORD_PTR>(this));
 
     LVCOLUMNW col{};
     col.mask = LVCF_TEXT | LVCF_WIDTH;
@@ -362,14 +377,8 @@ void SettingsWindow::CreateControls(HWND parent) {
     col.pszText = columnShortcut.data();
     ListView_InsertColumn(list_, 1, &col);
 
-    MakeControl(parent, WC_STATICW, T(Str::SettingsNewCombination).c_str(), 0,
-                settings_layout::kLabelNewCombination, kIdLabelNewCombination, instance_);
-    recorder_ = MakeControl(parent, WC_EDITW, L"", WS_BORDER | ES_READONLY,
-                            settings_layout::kRecorder, kIdRecorder, instance_);
-    SetWindowSubclass(recorder_, RecorderProc, kIdRecorder, reinterpret_cast<DWORD_PTR>(this));
-
-    MakeControl(parent, WC_BUTTONW, T(Str::SettingsAssign).c_str(), BS_PUSHBUTTON,
-                settings_layout::kAssign, kIdAssign, instance_);
+    MakeControl(parent, WC_STATICW, T(Str::SettingsAssignHint).c_str(), 0,
+                settings_layout::kHint, kIdLabelHint, instance_);
     MakeControl(parent, WC_BUTTONW, T(Str::SettingsRemove).c_str(), BS_PUSHBUTTON,
                 settings_layout::kClear, kIdClear, instance_);
 
@@ -465,9 +474,9 @@ int SettingsWindow::SelectedRow() const {
     return list_ ? ListView_GetNextItem(list_, -1, LVNI_SELECTED) : -1;
 }
 
-void SettingsWindow::ApplyRecordedShortcut() {
+void SettingsWindow::AssignShortcut(const Shortcut& shortcut) {
     const int row = SelectedRow();
-    if (row < 0 || !recorded_.IsValid()) return;
+    if (row < 0 || !shortcut.IsValid()) return;
 
     const Action action = AllActions()[static_cast<size_t>(row)];
 
@@ -475,7 +484,7 @@ void SettingsWindow::ApplyRecordedShortcut() {
     // there -- Windows could not tell two actions on one key apart anyway.
     std::vector<int> changed{row};
     for (auto it = config_.shortcuts.begin(); it != config_.shortcuts.end();) {
-        if (it->second == recorded_ && it->first != action) {
+        if (it->second == shortcut && it->first != action) {
             const auto& all = AllActions();
             for (size_t i = 0; i < all.size(); ++i) {
                 if (all[i] == it->first) changed.push_back(static_cast<int>(i));
@@ -486,11 +495,8 @@ void SettingsWindow::ApplyRecordedShortcut() {
         }
     }
 
-    config_.shortcuts[action] = recorded_;
+    config_.shortcuts[action] = shortcut;
     for (int r : changed) UpdateListRow(r);
-
-    recorded_ = Shortcut{};
-    SetWindowTextW(recorder_, L"");
 }
 
 void SettingsWindow::ClearShortcut() {

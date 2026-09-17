@@ -28,11 +28,11 @@ enum class Str {
 
     // Settings window
     SettingsTitle, SettingsActionsHeading, SettingsColumnAction, SettingsColumnShortcut,
-    SettingsNewCombination, SettingsAssign, SettingsRemove, SettingsOuterGap,
+    SettingsAssignHint, SettingsRemove, SettingsOuterGap,
     SettingsInnerGap, SettingsCycleSizes, SettingsSnapAreas, SettingsDisableWindowsSnap,
     SettingsLaunchAtLogin, SettingsMoveCursor, SettingsCheckUpdates, SettingsLanguage,
     SettingsLanguageAuto, SettingsImport, SettingsExport, SettingsSave, SettingsCancel,
-    SettingsHoldModifier, SettingsUnbound,
+    SettingsUnbound,
 
     // Messages
     MsgImportFailed, MsgImportWarnings, MsgExportFailed, MsgSkipped,

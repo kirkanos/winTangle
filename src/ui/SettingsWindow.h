@@ -29,8 +29,11 @@ public:
 
 private:
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
-    static LRESULT CALLBACK RecorderProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp,
-                                         UINT_PTR id, DWORD_PTR ref);
+    // Captures key combinations while the action list has focus, so a binding
+    // is made where it is read. Also the reason the list has to claim the keys
+    // from the dialog loop -- see WM_GETDLGCODE.
+    static LRESULT CALLBACK ListProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR id,
+                                     DWORD_PTR ref);
 
     void CreateControls(HWND parent);
 
@@ -45,7 +48,7 @@ private:
 
     void FillList();
     void UpdateListRow(int row);
-    void ApplyRecordedShortcut();
+    void AssignShortcut(const Shortcut& shortcut);
     void ClearShortcut();
     void ReadControlsIntoConfig();
     void WriteConfigIntoControls();
@@ -59,7 +62,6 @@ private:
 
     HWND hwnd_ = nullptr;
     HWND list_ = nullptr;
-    HWND recorder_ = nullptr;
     HWND outerGap_ = nullptr;
     HWND innerGap_ = nullptr;
     HWND checkCycle_ = nullptr;
@@ -76,7 +78,6 @@ private:
     Language languageAtOpen_ = Language::English;
     bool saved_ = false;
 
-    Shortcut recorded_;
 };
 
 }  // namespace wintangle

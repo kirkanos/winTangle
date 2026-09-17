@@ -29,10 +29,10 @@ struct Slot {
 inline constexpr Slot kHeading{"heading", {12, 10, 412, 28}};
 inline constexpr Slot kList{"list", {12, 32, 692, 362}};
 
-inline constexpr Slot kLabelNewCombination{"label:new-combination", {12, 374, 132, 392}};
-inline constexpr Slot kRecorder{"recorder", {136, 371, 356, 395}};
-inline constexpr Slot kAssign{"assign", {366, 371, 466, 395}};
-inline constexpr Slot kClear{"clear", {474, 371, 574, 395}};
+// Assignment happens in the list itself, so all this row needs is the hint
+// saying so, plus a discoverable alternative to the Delete key.
+inline constexpr Slot kHint{"hint", {12, 375, 560, 393}};
+inline constexpr Slot kClear{"clear", {574, 371, 692, 395}};
 
 inline constexpr Slot kLabelOuterGap{"label:outer-gap", {12, 416, 142, 434}};
 inline constexpr Slot kOuterGap{"outer-gap", {146, 413, 206, 435}};
@@ -59,7 +59,7 @@ inline constexpr Slot kCancel{"cancel", {580, 566, 680, 592}};
 
 // Every slot, for the overlap test.
 inline constexpr Slot kAll[] = {
-    kHeading, kList, kLabelNewCombination, kRecorder, kAssign, kClear,
+    kHeading, kList, kHint, kClear,
     kLabelOuterGap, kOuterGap, kLabelInnerGap, kInnerGap,
     kCheckCycle, kCheckSnap, kCheckDisableAero,
     kCheckAutostart, kCheckCursor, kCheckUpdates,

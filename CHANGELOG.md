@@ -9,6 +9,21 @@ automatically — creating a tag reads it out of this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Assigning a key combination in the settings did nothing for the combinations
+  most worth assigning. The dialog message loop turns arrow keys into
+  navigation and Enter into "press the default button" before any control sees
+  them, so Ctrl+Alt+Left and Ctrl+Alt+Enter never arrived. A control has to
+  claim those keys through `WM_GETDLGCODE`, which none did.
+
+### Changed
+
+- Key combinations are now assigned in the list itself: select an action, press
+  the combination, done. Delete removes one. The separate capture field and its
+  Assign button are gone. Plain arrow keys still move through the list — the
+  list only claims the keyboard while a modifier is held.
+
 ## [0.1.1] – 2026-09-16
 
 ### Changed
