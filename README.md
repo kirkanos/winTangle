@@ -280,9 +280,9 @@ URL call and drag-snap all run through the same path.
 8. Install, update and uninstall including the cleanup prompt.
 
 Confirmed so far on a real machine: keyboard shortcuts move windows, dragging
-to a screen edge snaps, Windows' own snapping survives quitting and
-uninstalling WinTangle, and an installed copy updates itself unattended and
-comes back running.
+to a screen edge snaps, key combinations can be reassigned in the settings,
+Windows' own snapping survives quitting and uninstalling WinTangle, and an
+installed copy updates itself unattended and comes back running.
 
 Still open, and the most likely place for a real defect: two displays at
 different scaling.
