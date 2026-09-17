@@ -91,7 +91,9 @@ Pressing the same half binding again cycles the size: 1/2 → 2/3 → 1/3.
 ## Changing the key bindings
 
 In the settings window, select an action in the list and press the combination.
-Delete removes one. A combination already used elsewhere moves to the action it
+Delete removes one. The global hotkeys are inactive while that window is open —
+otherwise pressing a combination that is already bound would simply run it
+instead of recording it. A combination already used elsewhere moves to the action it
 was just assigned to, since Windows could not tell two actions on one key apart
 anyway.
 

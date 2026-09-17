@@ -121,8 +121,12 @@ bool ChooseFile(HWND owner, bool save, std::wstring& path) {
 
 }  // namespace
 
-SettingsWindow::SettingsWindow(HINSTANCE instance, const Config& config, SaveFn onSave)
-    : instance_(instance), config_(config), onSave_(std::move(onSave)) {}
+SettingsWindow::SettingsWindow(HINSTANCE instance, const Config& config, SaveFn onSave,
+                               SuspendHotkeysFn onSuspendHotkeys)
+    : instance_(instance),
+      config_(config),
+      onSave_(std::move(onSave)),
+      onSuspendHotkeys_(std::move(onSuspendHotkeys)) {}
 
 void SettingsWindow::UpdateConfig(const Config& config) {
     config_ = config;
@@ -255,6 +259,9 @@ LRESULT CALLBACK SettingsWindow::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
             self->CreateControls(hwnd);
             self->WriteConfigIntoControls();
             self->FillList();
+            // Hand back the global hotkeys, otherwise every combination that is
+            // already bound is swallowed before it can be recorded here.
+            if (self->onSuspendHotkeys_) self->onSuspendHotkeys_(true);
             return 0;
         }
         case WM_COMMAND: {
@@ -296,6 +303,7 @@ LRESULT CALLBACK SettingsWindow::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
                 // tray menu would speak a language the user backed out of.
                 if (!self->saved_) SetLanguage(self->languageAtOpen_);
                 self->hwnd_ = nullptr;
+                if (self->onSuspendHotkeys_) self->onSuspendHotkeys_(false);
             }
             return 0;
         default:

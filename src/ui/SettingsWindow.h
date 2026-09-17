@@ -18,7 +18,15 @@ public:
     // hotkeys and writes the file.
     using SaveFn = std::function<void(const Config&)>;
 
-    SettingsWindow(HINSTANCE instance, const Config& config, SaveFn onSave);
+    // Called with true while the window is open. The global hotkeys have to be
+    // given up for that time: RegisterHotKey takes a combination system wide,
+    // so a registered Ctrl+Alt+Left never reaches this window at all -- it just
+    // runs the action, on the settings window itself. Every combination worth
+    // assigning is already taken, which made assignment impossible.
+    using SuspendHotkeysFn = std::function<void(bool suspended)>;
+
+    SettingsWindow(HINSTANCE instance, const Config& config, SaveFn onSave,
+                   SuspendHotkeysFn onSuspendHotkeys);
 
     // Shows the window, or brings an already open one to the front.
     void Show();
@@ -63,6 +71,7 @@ private:
     HINSTANCE instance_;
     Config config_;      // working copy, only adopted on save
     SaveFn onSave_;
+    SuspendHotkeysFn onSuspendHotkeys_;
 
     HWND hwnd_ = nullptr;
     HWND list_ = nullptr;

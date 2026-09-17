@@ -56,6 +56,10 @@ private:
     void LoadConfig();
     void SaveConfig();
     void ApplyConfig();          // hotkeys, snap tracker, AeroSnap switch
+
+    // While the settings window is open the global hotkeys are given up, so
+    // that pressing a combination there records it instead of running it.
+    void SetHotkeysSuspended(bool suspended);
     void RunAction(Action action);
     void ReportResult(Action action, ExecResult result);
     void HandleUriCommands();
@@ -79,6 +83,7 @@ private:
     bool accessDeniedReported_ = false;
     bool snapHookFailureReported_ = false;
     bool aeroSnapRepairFailed_ = false;
+    bool hotkeysSuspended_ = false;
 };
 
 void App::LoadConfig() {
@@ -130,13 +135,18 @@ void App::ApplyConfig() {
     updater_.SetAutomaticChecks(config_.automaticUpdates);
     if (settings_) settings_->UpdateConfig(config_);
 
-    const auto conflicts = hotkeys_->Apply(config_);
-    if (!conflicts.empty() && tray_) {
-        std::wstring text = T(Str::MsgHotkeyConflictIntro) + L"\n";
-        for (const auto& c : conflicts) {
-            text += L"• " + c.combo + L" (" + Widen(LocalizedActionLabel(c.action)) + L")\n";
+    if (hotkeysSuspended_) {
+        // The settings window is open and needs the keyboard to itself.
+        hotkeys_->UnregisterAll();
+    } else {
+        const auto conflicts = hotkeys_->Apply(config_);
+        if (!conflicts.empty() && tray_) {
+            std::wstring text = T(Str::MsgHotkeyConflictIntro) + L"\n";
+            for (const auto& c : conflicts) {
+                text += L"• " + c.combo + L" (" + Widen(LocalizedActionLabel(c.action)) + L")\n";
+            }
+            tray_->ShowBalloon(T(Str::MsgHotkeyConflictTitle), text, true);
         }
-        tray_->ShowBalloon(T(Str::MsgHotkeyConflictTitle), text, true);
     }
 
     // Windows' own snapping competes with our snap areas -- both react to the
@@ -145,6 +155,11 @@ void App::ApplyConfig() {
     ApplyWindowArrangingPreference(config_.disableWindowsSnap);
 
     SetAutostartEnabled(config_.launchAtLogin);
+}
+
+void App::SetHotkeysSuspended(bool suspended) {
+    hotkeysSuspended_ = suspended;
+    ApplyConfig();
 }
 
 bool App::Initialize() {
@@ -185,11 +200,14 @@ bool App::Initialize() {
     // The hook itself is installed by ApplyConfig() below, and only when snap
     // areas are enabled.
 
-    settings_ = std::make_unique<SettingsWindow>(instance_, config_, [this](const Config& updated) {
-        config_ = updated;
-        ApplyConfig();
-        SaveConfig();
-    });
+    settings_ = std::make_unique<SettingsWindow>(
+        instance_, config_,
+        [this](const Config& updated) {
+            config_ = updated;
+            ApplyConfig();
+            SaveConfig();
+        },
+        [this](bool suspended) { SetHotkeysSuspended(suspended); });
 
     // Only start WinSparkle once the configuration is in place -- the switch
     // for automatic checks goes straight to the library.

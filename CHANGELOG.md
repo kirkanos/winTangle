@@ -9,6 +9,16 @@ automatically — creating a tag reads it out of this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Key combinations still could not be assigned, for a second and more basic
+  reason than the one 0.1.2 addressed: `RegisterHotKey` claims a combination
+  system wide, so a bound `Ctrl+Alt+Left` never reached the settings window at
+  all — it ran the action, on the settings window itself. Since every
+  combination worth assigning was already bound, none of them could be
+  recorded. The global hotkeys are now given up while the settings window is
+  open and registered again when it closes.
+
 ### Added
 
 - A "Restore defaults" button in the settings, putting every setting back to
